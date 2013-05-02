@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <title>Mosaik Test</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <style>
+        html, body{
+            background: #333;
+        }
+
+        canvas{
+            border: #000 solid 1px;
+            background: #222;
+        }
+    </style>
+</head>
+<body>
+<canvas id="playground" width="800" height="600"></canvas>
+
+<script src="lib/underscore-min.js"></script>
+<script src="../dist/mosaik.js"></script>
+
+<script>
+    var stage = new mosaik.Stage({
+        el: 'playground'
+    });
+
+    var map = new mosaik.Map({
+        file: 'lib/map.json',
+        initialize: function(){
+            this.setViewport(this.width / 2, this.height / 2);
+            stage.setMap(this);
+        }
+    });
+
+</script>
+</body>
+</html>

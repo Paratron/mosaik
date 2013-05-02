@@ -1,0 +1,40 @@
+{ "height":10,
+ "layers":[
+        {
+         "data":[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 7, 8, 8, 8, 9, 7, 8, 8, 8, 9, 15, 13, 13, 13, 21, 25, 13, 13, 13, 11, 15, 13, 1, 5, 13, 13, 1, 5, 13, 11, 15, 13, 11, 17, 18, 18, 19, 15, 13, 11, 15, 13, 11, 4, 4, 4, 4, 15, 13, 11, 17, 18, 19, 4, 4, 4, 4, 17, 18, 19, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+         "height":10,
+         "name":"Kachelebene 1",
+         "opacity":1,
+         "type":"tilelayer",
+         "visible":true,
+         "width":10,
+         "x":0,
+         "y":0
+        }],
+ "orientation":"orthogonal",
+ "properties":
+    {
+
+    },
+ "tileheight":32,
+ "tilesets":[
+        {
+         "firstgid":1,
+         "image":"lib/tiles-grass-dirt.png",
+         "imageheight":160,
+         "imagewidth":160,
+         "margin":0,
+         "name":"Ground",
+         "properties":
+            {
+
+            },
+         "spacing":0,
+         "tileheight":32,
+         "tilewidth":32,
+         "transparentcolor":"#ffffff"
+        }],
+ "tilewidth":32,
+ "version":1,
+ "width":10
+}
