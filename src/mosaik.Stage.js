@@ -36,7 +36,8 @@
             viewPortTileW,      //Width of the canvas window in tiles
             viewPortTileH,
             viewPortOffsX,      //Rendering offset in pixels (i.E. when map is smaller than canvas)
-            viewPortOffsY;
+            viewPortOffsY,
+            renderPassNumber;   //Number of the current rendering pass. Used to avoid false multiple object rendering.
 
 
         width = params.width || 0;
@@ -51,6 +52,7 @@
         that = this;
         debugEl = null;
         stats = false;
+        renderPassNumber = 0;
 
         //When running in non-browser context, only the headless mode is available.
         if(typeof window === 'undefined'){
@@ -119,6 +121,7 @@
             palette = map.palette;
             tW = palette.tileWidth;
             tH = palette.tileHeight;
+            renderPassNumber++;
 
             ctx.clearRect(0, 0, width, height);
 
@@ -144,7 +147,36 @@
         }
 
         function renderObjects(){
+            var i,
+                x,
+                y,
+                o,
+                pal,
+                tW,
+                tH,
+                objectLayers;
 
+            objectLayers = map.objectLayers;
+            pal = map.palette;
+            tW = pal.tileWidth;
+            tH = pal.tileHeight;
+
+            for (i = 0; i < objectLayers.length; i++) {
+                for (y = viewPortTileY; y < viewPortTileH; y++) {
+                    for (x = viewPortTileX; x < viewPortTileW; x++) {
+                        o = objectLayers[i][x][y];
+
+                        if(o === null){
+                            continue;
+                        }
+                        if(o.rendered === renderPassNumber){
+                            continue;
+                        }
+                        o.rendered = renderPassNumber;
+                        o.render(ctx, x * tW + viewPortOffsX, y * tH + viewPortOffsY);
+                    }
+                }
+            }
         }
 
         function calculateViewportData(){

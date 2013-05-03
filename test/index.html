@@ -36,6 +36,27 @@
         initialize: function(){
             this.setViewport(this.width / 2, this.height / 2);
             stage.setMap(this);
+
+            var oPal = new mosaik.Palette({
+                mapImage: 'lib/weibvorne_gross.gif',
+                sizeW: 28,
+                sizeH: 42
+            });
+
+            oPal.on('ready', function(){
+                map.createObjectLayer();
+
+               var o = new mosaik.Object({
+                   width: 1,
+                   height: 1,
+                   offsX: 2,
+                   offsY: -10,
+                   map: map,
+                   palette: oPal
+               });
+
+                map.placeObject(0, o, 4, 6);
+            });
         }
     });
 

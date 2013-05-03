@@ -24,6 +24,7 @@
         params = params || {};
 
         this.mapData = null;
+        this.objectLayers = [];
         this.palette = null;
         this.width = 0;
         this.height = 0;
@@ -31,12 +32,16 @@
         var that,
             i,
             x,
-            y,
-            t,
-            objectLayers;
+            y;
 
         that = this;
-        objectLayers = [];
+
+        function finishInit(){
+            if(typeof params.initialize === 'function'){
+                params.initialize.call(that);
+            }
+            that.trigger('ready', that);
+        }
 
         if(params.file){
             //Load the map data from a JSON file.
@@ -51,7 +56,7 @@
 
                         for (x = 0; x < fileContent.width; x++) {
                             for (y = 0; y < fileContent.height; y++) {
-                                that.mapData[i][x][y] = fileContent.layers[i].data[y * fileContent.width + x]-1;
+                                that.mapData[i][x][y] = fileContent.layers[i].data[y * fileContent.width + x] - 1;
                             }
                         }
                     }
@@ -80,13 +85,6 @@
             this.palette = params.palette;
             this.prepare(params.width, params.height, params.defaultFieldIndex);
             finishInit();
-        }
-
-        function finishInit(){
-            if(typeof params.initialize === 'function'){
-                params.initialize.call(that);
-            }
-            that.trigger('ready', that);
         }
     };
 
@@ -123,6 +121,123 @@
 
                 this.mapData[0].push(row);
             }
+        },
+
+        /**
+         * The method creates a empty object layer and returns it.
+         * @returns {Array}
+         */
+        createObjectLayer: function (){
+            var x,
+                y,
+                oLayer;
+
+            oLayer = [];
+
+            for (x = 0; x < this.width; x++) {
+                oLayer.push([]);
+                for (y = 0; y < this.height; y++) {
+                    oLayer[x].push(null);
+                }
+            }
+
+            this.objectLayers.push(oLayer);
+
+            return oLayer;
+        },
+
+        /**
+         * Place a object on the map or move it around.
+         * Will return false if the desired space is occupied.
+         * @param {Number} layer
+         * @param {mosaik.Object} obj
+         * @param {Number} x
+         * @param {Number} y
+         * @param {Number} [oldX]
+         * @param {Number} [oldY]
+         * @param {Bool} [noEvent=false] Prevent the method from firing a Map#ObjectMoved or Map#ObjectPlaced event.
+         * @return {Bool}
+         */
+        placeObject: function (layer, obj, x, y, oldX, oldY, noEvent){
+            var ocupX,
+                ocupY;
+
+            if(!this.objectHitTest(layer, x, y, obj.width, obj.height, obj)){
+                if(oldX && oldY){
+                    this.removeObject(obj, oldX, oldY, true);
+                }
+
+                for (ocupX = x; ocupX <= x + obj.width - 1; ocupX++) {
+                    for (ocupY = y; ocupY <= y + obj.height - 1; ocupY++) {
+                        this.objectLayers[layer][ocupX][ocupY] = obj;
+                    }
+                }
+                obj.rendered = 0;
+                obj.x = x;
+                obj.y = y;
+                obj.layer = layer;
+
+                if(oldX && oldY && !noEvent){
+                    this.trigger('ObjectMoved', obj);
+                    return true;
+                }
+                if(!noEvent){
+                    this.trigger('ObjectPlaced', obj);
+                }
+                return true;
+            }
+            return false;
+        },
+
+        removeObject: function (obj, x, y, noEvent){
+            var freeX,
+                freeY;
+
+            for(freeX = x; freeX < x + obj.width-1; freeX++){
+                for(freeY = y; freeY < y + obj.width-1; freeY++){
+                    this.objectLayers[obj.layer][freeX][freeY] = null;
+                }
+            }
+
+            obj.x = null;
+            obj.y = null;
+            obj.layer = null;
+
+            if(!noEvent){
+                this.trigger('ObjectRemoved', obj);
+            }
+        },
+
+        /**
+         * Checks if the given space is occupied on a specific object layer.
+         * @param {Number} layer
+         * @param {Number} x
+         * @param {Number} y
+         * @param {Number} [w=1]
+         * @param {Number} [h=1]
+         * @param {mosaik.Object} [ignoreObj] A mosaik object to ignore upon the hit-test.
+         * @returns {Bool}
+         */
+        objectHitTest: function (layer, x, y, w, h, ignoreObj){
+            var wI,
+                hI,
+                l;
+
+            w = w || 1;
+            h = h || 1;
+
+            l = this.objectLayers[layer];
+
+            for (wI = x; wI < x + w - 1; wI++) {
+                for (hI = y; hI < y + h - 1; hI++) {
+                    if(l[wI][hI] !== null){
+                        if(!ignoreObj || ignoreObj.id !== l[wI][hI].id){
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
         },
 
         /**
@@ -169,7 +284,7 @@
          */
         setViewport: function (x, y, duration){
             if(!duration){
-                this.viewport = [x,y];
+                this.viewport = [x, y];
                 this.trigger('viewportChange', this);
             }
         }
