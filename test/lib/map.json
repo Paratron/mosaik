@@ -10,6 +10,32 @@
          "width":10,
          "x":0,
          "y":0
+        }, 
+        {
+         "height":10,
+         "name":"Objektebene 1",
+         "objects":[
+                {
+                 "gid":26,
+                 "height":0,
+                 "name":"player",
+                 "properties":
+                    {
+
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":128,
+                 "y":224
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "width":10,
+         "x":0,
+         "y":0
         }],
  "orientation":"orthogonal",
  "properties":
@@ -32,6 +58,29 @@
          "spacing":0,
          "tileheight":32,
          "tilewidth":32,
+         "transparentcolor":"#ffffff"
+        }, 
+        {
+         "firstgid":26,
+         "image":"lib/weibvorne_gross.gif",
+         "imageheight":42,
+         "imagewidth":28,
+         "margin":0,
+         "name":"Player",
+         "properties":
+            {
+
+            },
+         "spacing":0,
+         "tileheight":42,
+         "tileproperties":
+            {
+             "0":
+                {
+                 "name":"player"
+                }
+            },
+         "tilewidth":28,
          "transparentcolor":"#ffffff"
         }],
  "tilewidth":32,

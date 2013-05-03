@@ -74,7 +74,7 @@
         }
 
         this.draw = function (index, x, y){
-            var srcY = ~~(index / mapWidth);
+            var srcY = Math.floor(index / mapWidth);
             var srcX = (index - srcY * mapHeight) * tileSizeH;
             srcY *= tileSizeW;
             drawContext.drawImage(tileMap, srcX, srcY, tileSizeW, tileSizeH, x, y, tileSizeW, tileSizeH);

@@ -32,9 +32,11 @@
             i,
             x,
             y,
-            t;
+            t,
+            objectLayers;
 
         that = this;
+        objectLayers = [];
 
         if(params.file){
             //Load the map data from a JSON file.
@@ -43,6 +45,10 @@
                 if(mosaik.Map.isTiledMap(fileContent)){
                     that.prepare(fileContent.width, fileContent.height, 0);
                     for (i = 0; i < fileContent.layers.length; i++) {
+                        if(fileContent.layers[i].type !== 'tilelayer'){
+                            continue;
+                        }
+
                         for (x = 0; x < fileContent.width; x++) {
                             for (y = 0; y < fileContent.height; y++) {
                                 that.mapData[i][x][y] = fileContent.layers[i].data[y * fileContent.width + x]-1;

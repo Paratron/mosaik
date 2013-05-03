@@ -19,13 +19,16 @@
 </head>
 <body>
 <canvas id="playground" width="800" height="600"></canvas>
+<div id="debugInfo"></div>
 
 <script src="lib/underscore-min.js"></script>
+<script src="lib/stats.js"></script>
 <script src="../dist/mosaik.js"></script>
 
 <script>
     var stage = new mosaik.Stage({
-        el: 'playground'
+        el: 'playground',
+        debug: 'debugInfo'
     });
 
     var map = new mosaik.Map({
