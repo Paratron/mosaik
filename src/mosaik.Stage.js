@@ -37,7 +37,9 @@
             viewPortTileH,
             viewPortOffsX,      //Rendering offset in pixels (i.E. when map is smaller than canvas)
             viewPortOffsY,
-            renderPassNumber;   //Number of the current rendering pass. Used to avoid false multiple object rendering.
+            lastTween,          //Time when the last tweening cycle has been done.
+            tweenTime,          //Waiting time between tween cycles. Should be 30 times per second to perform smooth animations.
+            tweens;             //Array of tween objects to be worked off.
 
 
         width = params.width || 0;
@@ -52,7 +54,9 @@
         that = this;
         debugEl = null;
         stats = false;
-        renderPassNumber = 0;
+        lastTween = 0;
+        tweenTime = 1000 / 30;
+        tweens = [];
 
         //When running in non-browser context, only the headless mode is available.
         if(typeof window === 'undefined'){
@@ -89,6 +93,7 @@
 
         //Register our own render cycle on mosaiks RAF function.
         function cycle(runTime){
+
             mosaik.requestAnimationFrame(cycle);
 
             if(map && runTime >= lastTick + tickTime){
@@ -97,14 +102,27 @@
                 lastTick = runTime;
             }
 
-            if(!headless && map){
-                render();
+            if(map && runTime >= lastTween + tweenTime){
+                processTweens(runTime);
+
+                if(!headless && map){
+                    render(runTime);
+                }
             }
         }
 
         mosaik.requestAnimationFrame(cycle);
 
-        function render(){
+        function processTweens(runTime){
+            var i;
+
+            for (i = 0; i < tweens.length; i++) {
+                tweens[i].process(runTime);
+            }
+        }
+
+
+        function render(runTime){
             var mData,
                 palette,
                 x,
@@ -121,7 +139,6 @@
             palette = map.palette;
             tW = palette.tileWidth;
             tH = palette.tileHeight;
-            renderPassNumber++;
 
             ctx.clearRect(0, 0, width, height);
 
@@ -132,12 +149,12 @@
                     }
                 }
                 if(mData.length > 1 && l === mData.length - 2){
-                    renderObjects();
+                    renderObjects(runTime);
                 }
             }
 
             if(mData.length === 1){
-                renderObjects();
+                renderObjects(runTime);
             }
 
             if(stats){
@@ -146,7 +163,7 @@
 
         }
 
-        function renderObjects(){
+        function renderObjects(runTime){
             var i,
                 x,
                 y,
@@ -169,10 +186,10 @@
                         if(o === null){
                             continue;
                         }
-                        if(o.rendered === renderPassNumber){
+                        if(o.rendered === runTime){
                             continue;
                         }
-                        o.rendered = renderPassNumber;
+                        o.rendered = runTime;
                         o.render(ctx, x * tW + viewPortOffsX, y * tH + viewPortOffsY);
                     }
                 }
@@ -206,6 +223,7 @@
             if(mapObject instanceof mosaik.Map){
                 if(map){
                     map.stopListening();
+                    tweens = [];
                 }
                 mapObject.palette.setDrawContext(ctx);
                 viewPortTileW = Math.floor(width / mapObject.palette.tileWidth) + 1;
@@ -221,15 +239,38 @@
                     calculateViewportData();
                 });
                 calculateViewportData();
+                if(map.palette.tileAnimation){
+                    tweens.push(map.palette.tileAnimation);
+                }
                 return;
             }
             throw new Error('Only elements of type mosaik.Map allowed.');
         };
+
+        /**
+         * Creates a new tweening object to transform a value.
+         * Finished tweens are automatically removed.
+         * @param {Object} params
+         * @param {Number} params.duration Duration of the tweening process in milliseconds.
+         * @param {Number} params.beginValue The starting value of the tween.
+         * @param {Number} params.finishValue The end/target value of the tween.
+         * @param {String} [params.tweenMode="linear"] What equation should be used for the tween.
+         * @param {Function} [params.processFunction] A custom processing function to be used. Overrides tweenMode.
+         * @param {Number} [params.frameLimit] Limit the tween to a specific number of frames per second. (Something < 30)
+         * @returns {mosaik.Tween}
+         */
+        this.createTween = function (params){
+            var tween = new mosaik.Tween(params);
+
+            tweens.push(tween);
+
+            return tween;
+        };
     };
 
     mosaik.Stage.prototype = {
-
     };
 
     _.extend(mosaik.Stage.prototype, mosaik.Events);
-})();
+})
+    ();

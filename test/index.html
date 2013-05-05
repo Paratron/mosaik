@@ -38,13 +38,12 @@
             stage.setMap(this);
 
             var oPal = new mosaik.Palette({
-                mapImage: 'lib/weibvorne_gross.gif',
+                mapImage: 'lib/player_girl.png',
                 sizeW: 28,
                 sizeH: 42
             });
 
             oPal.on('ready', function(){
-                map.createObjectLayer();
 
                var o = new mosaik.Object({
                    width: 1,
@@ -52,10 +51,11 @@
                    offsX: 2,
                    offsY: -10,
                    map: map,
-                   palette: oPal
+                   palette: oPal,
+                   paletteIndex: 1
                });
 
-                map.placeObject(0, o, 4, 6);
+                map.placeObject(0, o, 11, 10);
             });
         }
     });

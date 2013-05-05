@@ -64,7 +64,8 @@
                     that.palette = new mosaik.Palette({
                         mapImage: fileContent.tilesets[0].image,
                         sizeW: fileContent.tilewidth,
-                        sizeH: fileContent.tileheight
+                        sizeH: fileContent.tileheight,
+                        animate: fileContent.tilesets[0].animate
                     });
 
                     if(that.palette.ready){
@@ -162,6 +163,10 @@
             var ocupX,
                 ocupY;
 
+            while(layer+1 > this.objectLayers.length){
+                this.createObjectLayer();
+            }
+
             if(!this.objectHitTest(layer, x, y, obj.width, obj.height, obj)){
                 if(oldX && oldY){
                     this.removeObject(obj, oldX, oldY, true);
@@ -249,7 +254,13 @@
          * @param {Number} params.index
          */
         set: function (params){
+            if(params.layer === undefined){
+                params.layer = 0;
+            }
 
+            this.mapData[params.layer][params.x][params.y] = params.index;
+
+            return this;
         },
 
         /**

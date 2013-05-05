@@ -35,13 +35,25 @@
             mapHeight,
             tileMap,
             that,
-            drawContext;
+            drawContext,
+            animationBuffer,
+            key;
 
         that = this;
 
         tileMap = params.mapImage;
+        animationBuffer = [];
+
+        function prepareAnimationBuffer(){
+            var i;
+
+            for(i = 0; i < mapWidth * mapHeight; i++){
+                animationBuffer.push(i);
+            }
+        }
 
         this.ready = false;
+        this.tileAnimation = null;
 
         if(params.size){
             this.tileWidth = this.tileHeight = tileSizeW = tileSizeH = params.size;
@@ -50,9 +62,39 @@
             this.tileHeight = tileSizeH = params.sizeH;
         }
 
+        if(params.animate){
+            for(key in params.animate){
+                params.animate[key].unshift(parseInt(key, 10));
+                params.animate[key] = {
+                    frames: params.animate[key],
+                    index: parseInt(key, 10),
+                    animationIndex: 0
+                };
+            }
+
+            this.tileAnimation = new mosaik.Tween({
+                frameLimit: params.animationFrameRate || 3,
+                processFunction: function(){
+                    var key,
+                        anims;
+
+                    anims = params.animate;
+
+                    for(key in anims){
+                        anims[key].animationIndex++;
+                        if(anims[key].animationIndex >= anims[key].frames.length){
+                            anims[key].animationIndex = 0;
+                        }
+                        animationBuffer[anims[key].index] = anims[key].frames[anims[key].animationIndex];
+                    }
+                }
+            });
+        }
+
         if(tileMap instanceof Image){
             mapWidth = tileMap.width / tileSizeW;
             mapHeight = tileMap.height / tileSizeH;
+            prepareAnimationBuffer();
             this.ready = true;
             /**
              * Ready Event
@@ -67,6 +109,7 @@
             tileMap.onload = function (){
                 mapWidth = tileMap.width / tileSizeW;
                 mapHeight = tileMap.height / tileSizeH;
+                prepareAnimationBuffer();
                 that.ready = true;
                 that.trigger('ready', that);
             };
@@ -74,9 +117,10 @@
         }
 
         this.draw = function (index, x, y){
+            index = animationBuffer[index];
             var srcY = Math.floor(index / mapWidth);
-            var srcX = (index - srcY * mapHeight) * tileSizeH;
-            srcY *= tileSizeW;
+            var srcX = (index - (srcY*2) * mapHeight) * tileSizeW;
+            srcY *= tileSizeH;
             drawContext.drawImage(tileMap, srcX, srcY, tileSizeW, tileSizeH, x, y, tileSizeW, tileSizeH);
         };
 
