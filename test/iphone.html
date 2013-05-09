@@ -3,25 +3,25 @@
 <head>
     <title>Mosaik Test</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-    <link rel="apple-touch-icon-precomposed" href="touch-icon-iphone.png" />
-    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="touch-icon-ipad.png" />
-    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="touch-icon-retina.png" />
+    <link rel="apple-touch-icon-precomposed" href="touch-icon-iphone.png"/>
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="touch-icon-ipad.png"/>
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="touch-icon-retina.png"/>
 
     <style>
-        html, body{
+        html, body {
             background: #333;
             margin: 0;
         }
 
-        canvas{
+        canvas {
             border: #000 solid 1px;
             background: #222;
         }
 
-        #debugInfo{
+        #debugInfo {
             position: absolute;
             top: 0;
             left: 0;
@@ -31,26 +31,30 @@
 <body>
 <canvas id="playground" width="320" height="480"></canvas>
 <div id="debugInfo"></div>
-
 <script src="lib/underscore-min.js"></script>
 <script src="lib/stats.js"></script>
 <script src="../dist/mosaik.js"></script>
 
 <script>
-    window.scrollTo(0,0);
+    window.scrollTo(0, 0);
 
-    document.ontouchmove = function(event){
-        event.preventDefault();
-    }
+    document.getElementById('playground').width = window.innerWidth;
+    document.getElementById('playground').height = window.innerHeight;
+
+    document.body.onorientationchange = function(){
+        stage.setDimensions(window.innerWidth, window.innerHeight);
+    };
 
     var stage = new mosaik.Stage({
         el: 'playground',
         debug: 'debugInfo'
     });
 
+    stage.captureInput();
+
     var map = new mosaik.Map({
         file: 'lib/map.json',
-        initialize: function(){
+        initialize: function (){
             this.setViewport(this.width / 2, this.height / 2);
             stage.setMap(this);
 
@@ -60,23 +64,28 @@
                 sizeH: 42
             });
 
-            oPal.on('ready', function(){
+            oPal.on('ready', function (){
 
-               var o = new mosaik.Object({
-                   width: 1,
-                   height: 1,
-                   offsX: 2,
-                   offsY: -10,
-                   map: map,
-                   palette: oPal,
-                   paletteIndex: 1
-               });
+                var o = new mosaik.Object({
+                    width: 1,
+                    height: 1,
+                    offsX: 2,
+                    offsY: -10,
+                    map: map,
+                    palette: oPal,
+                    paletteIndex: 1
+                });
 
                 map.placeObject(0, o, 11, 10);
             });
         }
     });
 
+    map.on('pointertap', function (e){
+        map.setViewport(e.pointers[0].tileX, e.pointers[0].tileY);
+    });
+
 </script>
+<script src="http://192.168.0.109:8080/target/target-script-min.js#anonymous"></script>
 </body>
 </html>

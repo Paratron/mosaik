@@ -31,10 +31,12 @@
         debug: 'debugInfo'
     });
 
+    stage.captureInput();
+
     var map = new mosaik.Map({
         file: 'lib/map.json',
         initialize: function(){
-            this.setViewport(25, 25);
+            this.setViewport(this.width / 2, this.height / 2);
             stage.setMap(this);
 
             var oPal = new mosaik.Palette({
@@ -58,6 +60,10 @@
                 map.placeObject(0, o, 11, 10);
             });
         }
+    });
+
+    map.on('pointertap', function(e){
+        map.setViewport(e.pointers[0].tileX, e.pointers[0].tileY);
     });
 
 </script>

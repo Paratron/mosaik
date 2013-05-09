@@ -15,7 +15,7 @@
 
     var mosaik;
     if(typeof window === 'undefined'){
-        mosaik = require('mosaik');
+        mosaik = exports || require('mosaik');
     } else {
         mosaik = window.mosaik;
     }
@@ -37,9 +37,39 @@
         that = this;
 
         function finishInit(){
+            var pointerStore;
+
             if(typeof params.initialize === 'function'){
                 params.initialize.call(that);
             }
+
+            pointerStore = [];
+
+            that.on('pointerdown pointerup', function (e){
+                var i,
+                    j;
+
+                if(e.type === 'pointerdown'){
+                    for (i = 0; i < e.pointers.length; i++) {
+                        pointerStore.push(e.pointers[i]);
+                    }
+                    return;
+                }
+
+                for (j = 0; j < e.pointers.length; j++) {
+                    for (i = 0; i < pointerStore.length; i++) {
+                        if(pointerStore[i].id === e.pointers[j].id){
+                            if(pointerStore[i].tileX === e.pointers[j].tileX && pointerStore[i].tileY === e.pointers[j].tileY){
+                                e.type = 'pointertap';
+                                that.trigger('pointertap', e);
+                            }
+                            pointerStore.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            });
+
             that.trigger('ready', that);
         }
 
@@ -163,7 +193,7 @@
             var ocupX,
                 ocupY;
 
-            while(layer+1 > this.objectLayers.length){
+            while (layer + 1 > this.objectLayers.length) {
                 this.createObjectLayer();
             }
 
@@ -198,8 +228,8 @@
             var freeX,
                 freeY;
 
-            for(freeX = x; freeX < x + obj.width-1; freeX++){
-                for(freeY = y; freeY < y + obj.width-1; freeY++){
+            for (freeX = x; freeX < x + obj.width - 1; freeX++) {
+                for (freeY = y; freeY < y + obj.width - 1; freeY++) {
                     this.objectLayers[obj.layer][freeX][freeY] = null;
                 }
             }

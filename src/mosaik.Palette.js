@@ -9,7 +9,7 @@
 
     var mosaik;
     if(typeof window === 'undefined'){
-        mosaik = require('mosaik');
+        mosaik = exports || require('mosaik');
     } else {
         mosaik = window.mosaik;
     }

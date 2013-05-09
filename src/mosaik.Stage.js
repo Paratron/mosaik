@@ -9,7 +9,7 @@
 
     var mosaik;
     if(typeof window === 'undefined'){
-        mosaik = require('mosaik');
+        mosaik = exports || require('mosaik');
     } else {
         mosaik = window.mosaik;
     }
@@ -29,8 +29,6 @@
             lastTick,           //Timestamp of the last tick
             tickCount,          //Number of ticks so far
             map,                //Reference to a mosaik.map object
-            viewPortXpx,        //Position of the viewport on the map in pixels
-            viewPortYpx,
             tileSliceX,         //Position of the tile slice taken from the map in tiles
             tileSliceY,
             tileSliceW,         //Dimension of the tile slice taken from the map in tiles
@@ -43,7 +41,8 @@
             renderOffsetY,
             lastTween,          //Time when the last tweening cycle has been done.
             tweenTime,          //Waiting time between tween cycles. Should be 30 times per second to perform smooth animations.
-            tweens;             //Array of tween objects to be worked off.
+            tweens,             //Array of tween objects to be worked off.
+            inputObserver;      //Instance of mosaik.Input to capture user generated events.
 
 
         stageWidth = params.width || 0;
@@ -60,6 +59,7 @@
         lastTween = 0;
         tweenTime = 1000 / 30;
         tweens = [];
+        inputObserver = null;
 
         //When running in non-browser context, only the headless mode is available.
         if(typeof window === 'undefined'){
@@ -94,7 +94,14 @@
             }
         }
 
-        //Register our own render cycle on mosaiks RAF function.
+        /**
+         * This is basically the "main loop" of the game.
+         * Its called up to 60 times every second and delegates calls to the tween processor and rendering routines
+         * from there.
+         * Calls to the tween processor, as well as tick events are NOT issued at 60fps, but get their own
+         * call rate. For tweens, this is 30 calls/second by default, ticks are issued every 100ms by default.
+         * @param runTime
+         */
         function cycle(runTime){
 
             mosaik.requestAnimationFrame(cycle);
@@ -107,15 +114,20 @@
 
             if(map && runTime >= lastTween + tweenTime){
                 processTweens(runTime);
+            }
 
-                if(!headless && map){
-                    render(runTime);
-                }
+            if(!headless && map){
+                render(runTime);
             }
         }
 
         mosaik.requestAnimationFrame(cycle);
 
+        /**
+         * This walks over all registered tween objects and calls their process() method to continue value tweening.
+         * Is called from within the cycle() function.
+         * @param runTime
+         */
         function processTweens(runTime){
             var i;
 
@@ -124,7 +136,11 @@
             }
         }
 
-
+        /**
+         * Renders all tile layers and will call the renderObjects() function, if necessary.
+         * Is called from within the cycle() function.
+         * @param {Number} runTime
+         */
         function render(runTime){
             var mData,
                 palette,
@@ -143,19 +159,19 @@
             tW = palette.tileWidth;
             tH = palette.tileHeight;
 
-            ctx.clearRect(0, 0, stageWidth, stageHeight);
-
             for (l = 0; l < mData.length; l++) {
                 for (y = tileSliceY; y < tileSliceY + tileSliceH; y++) {
                     for (x = tileSliceX; x < tileSliceX + tileSliceW; x++) {
-                        palette.draw(mData[l][x][y], (x-tileSliceX) * tW + renderOffsetX, (y-tileSliceY) * tH + renderOffsetY);
-                        //ctx.strokeText(x + ',' + y, x*tW + renderOffsetX + 5, y*tH + renderOffsetY + 5);
+                        palette.draw(mData[l][x][y], (x - tileSliceX) * tW + renderOffsetX, (y - tileSliceY) * tH + renderOffsetY);
+                        //ctx.strokeText(x + ',' + y, (x - tileSliceX)*tW + renderOffsetX + 5, (y - tileSliceY)*tH + renderOffsetY - 10);
+                        //ctx.strokeRect((x - tileSliceX)*tW + renderOffsetX, (y - tileSliceY)*tH + renderOffsetY, 32, 32);
                     }
                 }
                 if(mData.length > 1 && l === mData.length - 2){
                     renderObjects(runTime);
                 }
             }
+
 
             if(mData.length === 1){
                 renderObjects(runTime);
@@ -167,6 +183,13 @@
 
         }
 
+        /**
+         * Renders all elements from the object layer(s).
+         * Is called from within the render() function.
+         * The runTime parameter is passed to the objects to avoid multiple rendering of objects that occupy more than
+         * one tile.
+         * @param {Number} runTime
+         */
         function renderObjects(runTime){
             var i,
                 x,
@@ -194,12 +217,17 @@
                             continue;
                         }
                         o.rendered = runTime;
-                        o.render(ctx, (x-tileSliceX) * tW + renderOffsetX, (y-tileSliceY) * tH + renderOffsetY);
+                        o.render(ctx, (x - tileSliceX) * tW + renderOffsetX, (y - tileSliceY) * tH + renderOffsetY);
                     }
                 }
             }
         }
 
+        /**
+         * Calculate the the current range of the tile slice to be taken from the map object and rendered to screen.
+         * It also calculates the render-offset to use.
+         * Basically everything that can be cached after a call to setViewport() on the map or a change of stage dimensions.
+         */
         function calculateViewportData(){
             stageXpx = (map.viewport[0] * map.palette.tileWidth) - (stageWidth / 2);
             stageYpx = (map.viewport[1] * map.palette.tileHeight) - (stageHeight / 2);
@@ -209,14 +237,18 @@
             tileSliceX = Math.floor(Math.min(stageXpx / map.palette.tileWidth, map.width - tileSliceW));
             tileSliceY = Math.floor(Math.min(stageYpx / map.palette.tileHeight, map.height - tileSliceH));
 
+            if(tileSliceX < 0){
+                tileSliceX = 0;
+            }
+            if(tileSliceY < 0){
+                tileSliceY = 0;
+            }
+
             tileSliceWpx = tileSliceW * map.palette.tileWidth;
             tileSliceHpx = tileSliceH * map.palette.tileHeight;
 
             renderOffsetX = -((tileSliceWpx - stageWidth) / 2);
             renderOffsetY = -((tileSliceHpx - stageHeight) / 2);
-
-            console.log('Stage: ', stageXpx, stageYpx, stageWidth, stageHeight);
-            console.log(tileSliceX, tileSliceY, tileSliceW, tileSliceH, renderOffsetX, renderOffsetY);
         }
 
         /**
@@ -261,6 +293,61 @@
             tweens.push(tween);
 
             return tween;
+        };
+
+        /**
+         * This enables user input capturing of the stage element.
+         * If a map is attached to the stage, the stage will try to figure out which fields and/or objects are affected
+         * by pointer events and trigger according events on the map.
+         */
+        this.captureInput = function (){
+            if(inputObserver){
+                throw new Error('Input is already captured');
+            }
+
+            inputObserver = new mosaik.Input({el: el});
+            this.input = inputObserver;
+
+            inputObserver.on('pointerdown pointerup pointermove pointertap', function (e){
+                var i,
+                    p,
+                    tW,
+                    tH;
+
+                if(!map){
+                    return;
+                }
+
+                tW = map.palette.tileWidth;
+                tH = map.palette.tileHeight;
+
+                for (i = 0; i < e.pointers.length; i++) {
+                    p = e.pointers[i];
+
+                    p.tileX = Math.floor((p.x - renderOffsetX) / tW) + tileSliceX;
+                    p.tileY = Math.floor((p.y - renderOffsetY) / tH) + tileSliceY;
+
+                    //Trigger tile-targeted pointer events, so a dev can simply listen to a
+                    //specific pointer event directly on a tile coordinate.
+                    map.trigger(e.type + ':' + p.tileX + ',' + p.tileY, e);
+                }
+
+                //Trigger the complete event.
+                map.trigger(e.type, e);
+            });
+        };
+
+        /**
+         * Re-Sets the canvas dimensions and triggers all necessary following calculations.
+         * @param {Number} width
+         * @param {Number} height
+         */
+        this.setDimensions = function(width, height){
+            el.width = width;
+            el.height = height;
+            stageWidth = width;
+            stageHeight = height;
+            calculateViewportData();
         };
     };
 
