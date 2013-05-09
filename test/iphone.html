@@ -3,22 +3,33 @@
 <head>
     <title>Mosaik Test</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <!--[if lt IE 9]>
-    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <link rel="apple-touch-icon-precomposed" href="touch-icon-iphone.png" />
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="touch-icon-ipad.png" />
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="touch-icon-retina.png" />
+
     <style>
         html, body{
             background: #333;
+            margin: 0;
         }
 
         canvas{
             border: #000 solid 1px;
             background: #222;
         }
+
+        #debugInfo{
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
     </style>
 </head>
 <body>
-<canvas id="playground" width="800" height="600"></canvas>
+<canvas id="playground" width="320" height="480"></canvas>
 <div id="debugInfo"></div>
 
 <script src="lib/underscore-min.js"></script>
@@ -26,6 +37,12 @@
 <script src="../dist/mosaik.js"></script>
 
 <script>
+    window.scrollTo(0,0);
+
+    document.ontouchmove = function(event){
+        event.preventDefault();
+    }
+
     var stage = new mosaik.Stage({
         el: 'playground',
         debug: 'debugInfo'
@@ -34,7 +51,7 @@
     var map = new mosaik.Map({
         file: 'lib/map.json',
         initialize: function(){
-            this.setViewport(25, 25);
+            this.setViewport(this.width / 2, this.height / 2);
             stage.setMap(this);
 
             var oPal = new mosaik.Palette({

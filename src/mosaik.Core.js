@@ -14,34 +14,45 @@
      * Mapping RequestAnimationFrame onto Mosaik, or try and create something like that
      * for environments without RAF.
      */
-    (function (){
-        var lastTime = 0;
-        var vendors = ['webkit', 'moz'];
-        for (var x = 0; x < vendors.length && !root.requestAnimationFrame; ++x) {
-            mosaik.requestAnimationFrame = root[vendors[x] + 'RequestAnimationFrame'];
-            mosaik.cancelAnimationFrame =
-            root[vendors[x] + 'CancelAnimationFrame'] || root[vendors[x] + 'CancelRequestAnimationFrame'];
-        }
+    if(typeof window !== 'undefined' && window.mozRequestAnimationFrame === undefined){
+        //Shim for everything except FF.
+        (function (){
+            var lastTime = 0;
+            var vendors = ['webkit', 'moz'];
+            for (var x = 0; x < vendors.length && !root.requestAnimationFrame; ++x) {
+                mosaik.requestAnimationFrame = root[vendors[x] + 'RequestAnimationFrame'];
+                mosaik.cancelAnimationFrame =
+                root[vendors[x] + 'CancelAnimationFrame'] || root[vendors[x] + 'CancelRequestAnimationFrame'];
+            }
 
-        if(!mosaik.requestAnimationFrame){
-            mosaik.requestAnimationFrame = function (callback){
-                var currTime = new Date().getTime();
-                var timeToCall = Math.max(0, 16 - (currTime - lastTime));
-                var id = root.setTimeout(function (){
-                        callback(currTime + timeToCall);
-                    },
-                    timeToCall);
-                lastTime = currTime + timeToCall;
-                return id;
-            };
-        }
+            if(!mosaik.requestAnimationFrame){
+                mosaik.requestAnimationFrame = function (callback){
+                    var currTime = new Date().getTime();
+                    var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+                    var id = root.setTimeout(function (){
+                            callback(currTime + timeToCall);
+                        },
+                        timeToCall);
+                    lastTime = currTime + timeToCall;
+                    return id;
+                };
+            }
 
-        if(!mosaik.cancelAnimationFrame){
-            mosaik.cancelAnimationFrame = function (id){
-                clearTimeout(id);
-            };
-        }
-    }());
+            if(!mosaik.cancelAnimationFrame){
+                mosaik.cancelAnimationFrame = function (id){
+                    clearTimeout(id);
+                };
+            }
+        }());
+    } else {
+        //Shim for firefox. :-S
+        mosaik.requestAnimationFrame = function(cb){
+            return window.mozRequestAnimationFrame(cb);
+        };
+        mosaik.cancelAnimationFrame = function(id){
+            return window.mozCancelRequestAnimationFrame(id);
+        };
+    }
 
     /**
      * Loads a file via AJAX and returns the content to a callback.

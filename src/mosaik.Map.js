@@ -292,11 +292,16 @@
          * @param {Number} x
          * @param {Number} y
          * @param {Number} [duration=0] Tween the transition to the new viewport position (in milliseconds)
+         * @param {Bool} [noEvent]
          */
-        setViewport: function (x, y, duration){
+        setViewport: function (x, y, duration, noEvent){
             if(!duration){
                 this.viewport = [x, y];
-                this.trigger('viewportChange', this);
+                if(!noEvent){
+                    this.trigger('viewportChange', this);
+                }
+            } else {
+
             }
         }
     };

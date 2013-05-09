@@ -17,8 +17,8 @@
     mosaik.Stage = function (params){
         params = params || {};
 
-        var width,              //Width of the canvas
-            height,             //Height of the canvas
+        var stageWidth,         //Width of the canvas in pixels
+            stageHeight,        //Height of the canvas in pixels
             headless,           //Headless mode? (no graphical output)
             el,                 //Reference to the canvas element
             debugEl,            //Reference to the DOM node that displays debugging information
@@ -29,28 +29,31 @@
             lastTick,           //Timestamp of the last tick
             tickCount,          //Number of ticks so far
             map,                //Reference to a mosaik.map object
-            viewPortX,          //TopLeft position of the canvas window relative to the map in pixels
-            viewPortY,
-            viewPortTileX,      //TopLeft tile position of the canvas window relative to the map
-            viewPortTileY,
-            viewPortTileW,      //Width of the canvas window in tiles
-            viewPortTileH,
-            viewPortOffsX,      //Rendering offset in pixels (i.E. when map is smaller than canvas)
-            viewPortOffsY,
+            viewPortXpx,        //Position of the viewport on the map in pixels
+            viewPortYpx,
+            tileSliceX,         //Position of the tile slice taken from the map in tiles
+            tileSliceY,
+            tileSliceW,         //Dimension of the tile slice taken from the map in tiles
+            tileSliceH,
+            tileSliceWpx,       //Dimension of the tile slice taken from the map in pixels
+            tileSliceHpx,
+            stageXpx,           //Position of the stage relative to the map in pixels
+            stageYpx,
+            renderOffsetX,      //Render offset in pixels
+            renderOffsetY,
             lastTween,          //Time when the last tweening cycle has been done.
             tweenTime,          //Waiting time between tween cycles. Should be 30 times per second to perform smooth animations.
             tweens;             //Array of tween objects to be worked off.
 
 
-        width = params.width || 0;
-        height = params.height || 0;
+        stageWidth = params.width || 0;
+        stageHeight = params.height || 0;
         headless = !!params.headless;
         el = params.el || null;
         tickTime = params.tickTime || 100;
         lastTick = 0;
         ctx = null;
         map = null;
-        viewPortX = viewPortY = viewPortOffsX = viewPortOffsY = 0;
         that = this;
         debugEl = null;
         stats = false;
@@ -71,12 +74,12 @@
             //Check if the canvas is given, or has to be created.
             if(el.nodeName !== 'CANVAS'){
                 el = document.createElement('canvas');
-                width = el.width = params.width;
-                height = el.height = params.height;
+                stageWidth = el.width = params.width;
+                stageHeight = el.height = params.height;
                 document.body.appendChild(el);
             } else {
-                width = el.width;
-                height = el.height;
+                stageWidth = el.width;
+                stageHeight = el.height;
             }
 
             ctx = el.getContext('2d');
@@ -140,12 +143,13 @@
             tW = palette.tileWidth;
             tH = palette.tileHeight;
 
-            ctx.clearRect(0, 0, width, height);
+            ctx.clearRect(0, 0, stageWidth, stageHeight);
 
             for (l = 0; l < mData.length; l++) {
-                for (y = viewPortTileY; y < viewPortTileH; y++) {
-                    for (x = viewPortTileX; x < viewPortTileW; x++) {
-                        palette.draw(mData[l][x][y], x * tW + viewPortOffsX, y * tH + viewPortOffsY);
+                for (y = tileSliceY; y < tileSliceY + tileSliceH; y++) {
+                    for (x = tileSliceX; x < tileSliceX + tileSliceW; x++) {
+                        palette.draw(mData[l][x][y], (x-tileSliceX) * tW + renderOffsetX, (y-tileSliceY) * tH + renderOffsetY);
+                        //ctx.strokeText(x + ',' + y, x*tW + renderOffsetX + 5, y*tH + renderOffsetY + 5);
                     }
                 }
                 if(mData.length > 1 && l === mData.length - 2){
@@ -179,8 +183,8 @@
             tH = pal.tileHeight;
 
             for (i = 0; i < objectLayers.length; i++) {
-                for (y = viewPortTileY; y < viewPortTileH; y++) {
-                    for (x = viewPortTileX; x < viewPortTileW; x++) {
+                for (y = tileSliceY; y < tileSliceY + tileSliceH; y++) {
+                    for (x = tileSliceX; x < tileSliceX + tileSliceW; x++) {
                         o = objectLayers[i][x][y];
 
                         if(o === null){
@@ -190,29 +194,29 @@
                             continue;
                         }
                         o.rendered = runTime;
-                        o.render(ctx, x * tW + viewPortOffsX, y * tH + viewPortOffsY);
+                        o.render(ctx, (x-tileSliceX) * tW + renderOffsetX, (y-tileSliceY) * tH + renderOffsetY);
                     }
                 }
             }
         }
 
         function calculateViewportData(){
-            viewPortX = map.viewport[0] * map.palette.tileWidth - width / 2;
-            viewPortY = map.viewport[1] * map.palette.tileHeight - height / 2;
+            stageXpx = (map.viewport[0] * map.palette.tileWidth) - (stageWidth / 2);
+            stageYpx = (map.viewport[1] * map.palette.tileHeight) - (stageHeight / 2);
 
-            if(viewPortX <= 0){
-                viewPortTileX = 0;
-                viewPortOffsX = -viewPortX;
-            } else {
-                viewPortTileX = Math.floor(viewPortX / map.palette.tileWidth);
-            }
+            tileSliceW = Math.ceil(Math.min(stageWidth / map.palette.tileWidth, map.width));
+            tileSliceH = Math.ceil(Math.min(stageHeight / map.palette.tileHeight, map.height));
+            tileSliceX = Math.floor(Math.min(stageXpx / map.palette.tileWidth, map.width - tileSliceW));
+            tileSliceY = Math.floor(Math.min(stageYpx / map.palette.tileHeight, map.height - tileSliceH));
 
-            if(viewPortY <= 0){
-                viewPortTileY = 0;
-                viewPortOffsY = -viewPortY;
-            } else {
-                viewPortTileY = Math.floor(viewPortY / map.palette.tileHeight);
-            }
+            tileSliceWpx = tileSliceW * map.palette.tileWidth;
+            tileSliceHpx = tileSliceH * map.palette.tileHeight;
+
+            renderOffsetX = -((tileSliceWpx - stageWidth) / 2);
+            renderOffsetY = -((tileSliceHpx - stageHeight) / 2);
+
+            console.log('Stage: ', stageXpx, stageYpx, stageWidth, stageHeight);
+            console.log(tileSliceX, tileSliceY, tileSliceW, tileSliceH, renderOffsetX, renderOffsetY);
         }
 
         /**
@@ -226,14 +230,6 @@
                     tweens = [];
                 }
                 mapObject.palette.setDrawContext(ctx);
-                viewPortTileW = Math.floor(width / mapObject.palette.tileWidth) + 1;
-                viewPortTileH = Math.floor(height / mapObject.palette.tileHeight) + 1;
-                if(viewPortTileW > mapObject.width){
-                    viewPortTileW = mapObject.width;
-                }
-                if(viewPortTileH > mapObject.height){
-                    viewPortTileH = mapObject.height;
-                }
                 map = mapObject;
                 this.listenTo(map, 'viewportChange', function (){
                     calculateViewportData();

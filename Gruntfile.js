@@ -9,7 +9,8 @@ module.exports = function (grunt){
         uglify: {
             options: {
                 banner: '/* Mosaik\n' +
-                        ' * ==============================================\n' +
+                        ' * ======\n' +
+                        ' * @license: CC BY-NC 3.0 (http://creativecommons.org/licenses/by-nc/3.0/)\n' +
                         ' * @author: Christian Engel <hello@wearekiss.com>\n' +
                         ' * @updated: ' + (new Date()).toDateString() + '\n' +
                         ' */\n' +
@@ -22,6 +23,14 @@ module.exports = function (grunt){
             }
         },
         concat: {
+            options: {
+                banner: '/* Mosaik - Tilebased Engine\n' +
+                        ' * ======\n' +
+                        ' * @license: CC BY-NC 3.0 (http://creativecommons.org/licenses/by-nc/3.0/)\n' +
+                        ' * @author: Christian Engel <hello@wearekiss.com>\n' +
+                        ' * @updated: ' + (new Date()).toDateString() + '\n' +
+                        ' */\n'
+            },
             dist: {
                 src: ['src/mosaik.Core.js', 'src/mosaik.Events.js', 'src/mosaik.Map.js', 'src/mosaik.Palette.js', 'src/mosaik.Stage.js', 'src/mosaik.Object.js', 'src/mosaik.Tween.js'],
                 dest: 'dist/mosaik.js'
