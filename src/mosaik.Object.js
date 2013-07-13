@@ -65,10 +65,20 @@
          * @param {CanvasRenderingContext2D} canvasContext
          * @param {Number} x X-Position to draw on, in pixels
          * @param {Number} y Y-Position to draw on, in pixels
+         * @param {Object} debugDrawing Configuration object for potentially debug drawings
          */
-        render: function(canvasContext, x, y){
+        render: function(canvasContext, x, y, debugDrawing){
             this.palette.setDrawContext(canvasContext);
-            this.palette.draw(this.paletteIndex, x, y);
+            this.palette.draw(this.paletteIndex, x, y, {});
+            if(debugDrawing.objectOutlines){
+                canvasContext.save();
+                canvasContext.beginPath();
+                canvasContext.strokeStyle = debugDrawing.objectOutlines;
+                canvasContext.lineWidth = 1;
+                canvasContext.rect(x + 0.5, y + 0.5, this.palette.tileWidth * this.width, this.palette.tileHeight * this.height);
+                canvasContext.stroke();
+                canvasContext.restore();
+            }
         }
     };
 

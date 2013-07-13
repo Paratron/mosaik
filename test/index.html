@@ -7,11 +7,11 @@
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
     <style>
-        html, body{
+        html, body {
             background: #333;
         }
 
-        canvas{
+        canvas {
             border: #000 solid 1px;
             background: #222;
         }
@@ -26,17 +26,30 @@
 <script src="../dist/mosaik.js"></script>
 
 <script>
+    var stage,
+            map,
+            player;
+
     var stage = new mosaik.Stage({
         el: 'playground',
-        debug: 'debugInfo'
+        debug: 'debugInfo',
+        debugDrawing: {
+            //objectOutlines: '#f00',
+            //tileOutlines: '#0f0',
+            //tilePaletteIndexes: '#f00',
+            debugFieldHighlight: 'rgba(152,56,255,0.5)',
+            lastClickedTile: 'rgba(255,255,0,0.5)'
+        }
     });
 
     stage.captureInput();
 
-    var map = new mosaik.Map({
+
+    map = new mosaik.Map({
         file: 'lib/map.json',
-        initialize: function(){
+        initialize: function (){
             this.setViewport(this.width / 2, this.height / 2);
+
             stage.setMap(this);
 
             var oPal = new mosaik.Palette({
@@ -45,25 +58,39 @@
                 sizeH: 42
             });
 
-            oPal.on('ready', function(){
+            oPal.on('ready', function (){
 
-               var o = new mosaik.Object({
-                   width: 1,
-                   height: 1,
-                   offsX: 2,
-                   offsY: -10,
-                   map: map,
-                   palette: oPal,
-                   paletteIndex: 1
-               });
+                player = new mosaik.Object({
+                    width: 1,
+                    height: 1,
+                    offsX: 2,
+                    offsY: -10,
+                    map: map,
+                    palette: oPal,
+                    paletteIndex: 1
+                });
 
-                map.placeObject(0, o, 11, 10);
+                map.placeObject(player, 0, 11, 10);
             });
         }
     });
 
-    map.on('pointertap', function(e){
-        map.setViewport(e.pointers[0].tileX, e.pointers[0].tileY);
+    traveled = [];
+
+    map.on('pointertap', function (e){
+        //map.setViewport(e.pointers[0].tileX, e.pointers[0].tileY);
+        var path;
+
+        path = map.getPath(
+                0,
+                player.x,
+                player.y,
+                e.pointers[0].tileX,
+                e.pointers[0].tileY,
+                [34,5,6,7,19,33,47,48,49,21,35]
+        );
+
+        stage.debugHighlightFields(path);
     });
 
 </script>

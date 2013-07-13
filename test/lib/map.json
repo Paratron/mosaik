@@ -45,7 +45,7 @@
     "tilesets": [
         {
             "firstgid": 1,
-            "image": "lib/ground.png",
+            "image": "ground.png",
             "imageheight": 224,
             "imagewidth": 448,
             "margin": 0,

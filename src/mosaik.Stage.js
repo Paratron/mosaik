@@ -42,7 +42,9 @@
             lastTween,          //Time when the last tweening cycle has been done.
             tweenTime,          //Waiting time between tween cycles. Should be 30 times per second to perform smooth animations.
             tweens,             //Array of tween objects to be worked off.
-            inputObserver;      //Instance of mosaik.Input to capture user generated events.
+            inputObserver,      //Instance of mosaik.Input to capture user generated events.
+            lastClickedTile,    //Point Object with the coordinates of the last clicked tile.
+            highlightedTiles;   //Array of tiles to be highlighted.
 
 
         stageWidth = params.width || 0;
@@ -60,6 +62,9 @@
         tweenTime = 1000 / 30;
         tweens = [];
         inputObserver = null;
+        lastClickedTile = null;
+        highlightedTiles = null;
+        this.debugDrawing = params.debugDrawing || {};
 
         //When running in non-browser context, only the headless mode is available.
         if(typeof window === 'undefined'){
@@ -106,17 +111,21 @@
 
             mosaik.requestAnimationFrame(cycle);
 
-            if(map && runTime >= lastTick + tickTime){
+            if(!map){
+                return;
+            }
+
+            if(runTime >= lastTick + tickTime){
                 tickCount++;
                 map.trigger('tick', tickCount);
                 lastTick = runTime;
             }
 
-            if(map && runTime >= lastTween + tweenTime){
+            if(runTime >= lastTween + tweenTime){
                 processTweens(runTime);
             }
 
-            if(!headless && map){
+            if(!headless){
                 render(runTime);
             }
         }
@@ -146,9 +155,12 @@
                 palette,
                 x,
                 y,
+                xPos,
+                yPos,
                 tW,
                 tH,
-                l;
+                l,
+                debugDrawing;
 
             if(stats){
                 stats.begin();
@@ -158,11 +170,14 @@
             palette = map.palette;
             tW = palette.tileWidth;
             tH = palette.tileHeight;
+            debugDrawing = that.debugDrawing;
 
             for (l = 0; l < mData.length; l++) {
                 for (y = tileSliceY; y < tileSliceY + tileSliceH; y++) {
                     for (x = tileSliceX; x < tileSliceX + tileSliceW; x++) {
-                        palette.draw(mData[l][x][y], (x - tileSliceX) * tW + renderOffsetX, (y - tileSliceY) * tH + renderOffsetY);
+                        xPos = (x - tileSliceX) * tW + renderOffsetX;
+                        yPos = (y - tileSliceY) * tH + renderOffsetY;
+                        palette.draw(mData[l][x][y], xPos, yPos, debugDrawing);
                         //ctx.strokeText(x + ',' + y, (x - tileSliceX)*tW + renderOffsetX + 5, (y - tileSliceY)*tH + renderOffsetY - 10);
                         //ctx.strokeRect((x - tileSliceX)*tW + renderOffsetX, (y - tileSliceY)*tH + renderOffsetY, 32, 32);
                     }
@@ -172,6 +187,27 @@
                 }
             }
 
+            if(debugDrawing.lastClickedTile && lastClickedTile){
+                ctx.save();
+                ctx.save();
+                ctx.beginPath();
+                ctx.fillStyle = debugDrawing.lastClickedTile;
+                ctx.rect((lastClickedTile.x - tileSliceX) * tW + renderOffsetX + 0.5, (lastClickedTile.y - tileSliceY) * tH + renderOffsetY + 0.5, tW, tH);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            if(debugDrawing.debugFieldHighlight && highlightedTiles){
+                ctx.save();
+                ctx.save();
+                ctx.beginPath();
+                ctx.fillStyle = debugDrawing.debugFieldHighlight;
+                for(l in highlightedTiles){
+                    ctx.rect((highlightedTiles[l].x - tileSliceX) * tW + renderOffsetX + 0.5, (highlightedTiles[l].y - tileSliceY) * tH + renderOffsetY + 0.5, tW, tH);
+                }
+                ctx.fill();
+                ctx.restore();
+            }
 
             if(mData.length === 1){
                 renderObjects(runTime);
@@ -194,16 +230,20 @@
             var i,
                 x,
                 y,
+                xPos,
+                yPos,
                 o,
                 pal,
                 tW,
                 tH,
-                objectLayers;
+                objectLayers,
+                debugDrawing;
 
             objectLayers = map.objectLayers;
             pal = map.palette;
             tW = pal.tileWidth;
             tH = pal.tileHeight;
+            debugDrawing = that.debugDrawing;
 
             for (i = 0; i < objectLayers.length; i++) {
                 for (y = tileSliceY; y < tileSliceY + tileSliceH; y++) {
@@ -217,7 +257,9 @@
                             continue;
                         }
                         o.rendered = runTime;
-                        o.render(ctx, (x - tileSliceX) * tW + renderOffsetX, (y - tileSliceY) * tH + renderOffsetY);
+                        xPos = (x - tileSliceX) * tW + renderOffsetX + o.offsX;
+                        yPos = (y - tileSliceY) * tH + renderOffsetY + o.offsY;
+                        o.render(ctx, xPos, yPos, debugDrawing);
                     }
                 }
             }
@@ -327,6 +369,13 @@
                     p.tileX = Math.floor((p.x - renderOffsetX) / tW) + tileSliceX;
                     p.tileY = Math.floor((p.y - renderOffsetY) / tH) + tileSliceY;
 
+                    if(i === 0 && e.type === 'pointerup'){
+                        lastClickedTile = {
+                            x: p.tileX,
+                            y: p.tileY
+                        };
+                    }
+
                     //Trigger tile-targeted pointer events, so a dev can simply listen to a
                     //specific pointer event directly on a tile coordinate.
                     map.trigger(e.type + ':' + p.tileX + ',' + p.tileY, e);
@@ -342,12 +391,21 @@
          * @param {Number} width
          * @param {Number} height
          */
-        this.setDimensions = function(width, height){
+        this.setDimensions = function (width, height){
             el.width = width;
             el.height = height;
             stageWidth = width;
             stageHeight = height;
             calculateViewportData();
+        };
+
+        /**
+         * Sets an array of point objects with field coordinates to be highlighted.
+         * Set debugDrawing.debugFieldHighlight of the stage to the desired color.
+         * @param {Array} fieldsArray
+         */
+        this.debugHighlightFields = function (fieldsArray){
+            highlightedTiles = (fieldsArray && fieldsArray.length) ? fieldsArray : null;
         };
     };
 

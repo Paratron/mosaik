@@ -28,11 +28,13 @@
         this.palette = null;
         this.width = 0;
         this.height = 0;
+        this.viewport = [0, 0];
 
         var that,
             i,
             x,
-            y;
+            y,
+            mapPath;
 
         that = this;
 
@@ -78,6 +80,12 @@
             mosaik.getJSON(params.file, function (fileContent){
 
                 if(mosaik.Map.isTiledMap(fileContent)){
+                    mapPath = params.file.split('/');
+                    mapPath.pop();
+                    mapPath = mapPath.join('/');
+                    if(mapPath){
+                        mapPath += '/';
+                    }
                     that.prepare(fileContent.width, fileContent.height, 0);
                     for (i = 0; i < fileContent.layers.length; i++) {
                         if(fileContent.layers[i].type !== 'tilelayer'){
@@ -92,7 +100,7 @@
                     }
 
                     that.palette = new mosaik.Palette({
-                        mapImage: fileContent.tilesets[0].image,
+                        mapImage: mapPath + fileContent.tilesets[0].image,
                         sizeW: fileContent.tilewidth,
                         sizeH: fileContent.tileheight,
                         animate: fileContent.tilesets[0].animate
@@ -180,8 +188,8 @@
         /**
          * Place a object on the map or move it around.
          * Will return false if the desired space is occupied.
-         * @param {Number} layer
          * @param {mosaik.Object} obj
+         * @param {Number} layer
          * @param {Number} x
          * @param {Number} y
          * @param {Number} [oldX]
@@ -189,7 +197,7 @@
          * @param {Bool} [noEvent=false] Prevent the method from firing a Map#ObjectMoved or Map#ObjectPlaced event.
          * @return {Bool}
          */
-        placeObject: function (layer, obj, x, y, oldX, oldY, noEvent){
+        placeObject: function (obj, layer, x, y, oldX, oldY, noEvent){
             var ocupX,
                 ocupY;
 
@@ -312,7 +320,163 @@
          * @param {Number} [layer=0]
          */
         get: function (x, y, layer){
+            return this.mapData[layer || 0][x][y];
+        },
 
+        /**
+         * Will return an array of tile coordinates that marks the path from tile A to tile B.
+         * When avoidTiles is given, the tile types from the array are avoided by the path.
+         * The method will return boolean false if no path is possible.
+         * @param {Number} layer
+         * @param {Number} fromX
+         * @param {Number} fromY
+         * @param {Number} toX
+         * @param {Number} toY
+         * @param {Array} [avoidTiles] Optional array of palette indexes to avoid.
+         * @return {Array|false}
+         */
+        getPath: function (layer, fromX, fromY, toX, toY, avoidTiles){
+            var field,
+                openList,
+                closedList,
+                currentNode;
+
+            field = this.mapData[layer];
+            avoidTiles = avoidTiles || [];
+            openList = [];
+            closedList = [];
+
+            function manhattanDistance(x1, y1, x2, y2){
+                return Math.abs(x2 - x1) + Math.abs(y2 - y1);
+            }
+
+            /**
+             * Returns the Node with the best score.
+             * @returns {Mixed}
+             */
+            function shiftMinNode(){
+                var node;
+
+                _.sortBy(openList, function (n){
+                    return n.g + n.h;
+                });
+
+                node = openList.shift();
+
+                return node;
+            }
+
+            function closeNode(node){
+                if(closedList[node.x] === undefined){
+                    closedList[node.x] = [];
+                }
+                closedList[node.x][node.y] = true;
+            }
+
+            function isClosed(node){
+                if(closedList[node.x] === undefined){
+                    return false;
+                }
+                return closedList[node.x][node.y];
+            }
+
+            function isOpen(node){
+                return _.find(openList, function(n){
+                    return n.x === node.x && n.y === node.y;
+                });
+            }
+
+            function getPath(node){
+                var path;
+
+                path = [];
+
+                while (node.parent) {
+                    path.push({
+                        x: node.x,
+                        y: node.y
+                    });
+                    node = node.parent;
+                }
+
+                return path;
+            }
+
+            function getNode(x, y, parent, target){
+                if(x < 0 || y < 0 || y >= field.length || x >= field[0].length){
+                    return;
+                }
+
+                if(closedList[x] && closedList[x][y]){
+                    return;
+                }
+
+                if(avoidTiles.indexOf(field[x][y]) !== -1){
+                    return;
+                }
+
+                target.push({x: x, y: y, g: parent.g + 1, h: manhattanDistance(x, y, fromX, fromY)});
+            }
+
+            function expand(node){
+                var neighbors,
+                    neighbor,
+                    n,
+                    nOpen,
+                    key,
+                    tG;
+
+                neighbors = [];
+
+                getNode(node.x, node.y - 1, node, neighbors);
+                getNode(node.x - 1, node.y, node, neighbors);
+                getNode(node.x + 1, node.y, node, neighbors);
+                getNode(node.x, node.y + 1, node, neighbors);
+
+                for(key in neighbors){
+                    neighbor = neighbors[key];
+                    tG = node.g + 1;
+
+                    if(isClosed(neighbor) && tG >= neighbor.g){
+                        continue;
+                    }
+
+                    n = isOpen(neighbor);
+                    if(!n || tG < neighbor.g){
+                        nOpen = true;
+                        if(!n){
+                            n = neighbor;
+                            nOpen = false;
+                        }
+                        n.parent = node;
+                        n.g = tG;
+                        if(!nOpen){
+                            openList.push(n);
+                        }
+                    }
+                }
+            }
+
+            openList.push({
+                x: toX,
+                y: toY,
+                g: 0,
+                h: manhattanDistance(toX, toY, fromX, fromY)
+            });
+
+            while (openList.length) {
+                currentNode = shiftMinNode();
+
+                if(currentNode.x === fromX && currentNode.y === fromY){
+                    return getPath(currentNode);
+                }
+
+                closeNode(currentNode);
+
+                expand(currentNode);
+            }
+
+            return [];
         },
 
         /**
@@ -337,7 +501,7 @@
     };
 
     /**
-     * Analyzes the fileContend of a loaded JSON map to determine if its a map saved from the tiled map editor.
+     * Analyzes the fileContent of a loaded JSON map to determine if its a map saved from the tiled map editor.
      * @param {Object} fileContent
      * @return {Bool}
      */

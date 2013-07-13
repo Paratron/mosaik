@@ -26,6 +26,18 @@
             top: 0;
             left: 0;
         }
+
+        /*
+         * @photonstorm fix for white flashes on tapping the canvas.
+         */
+        * {
+        	user-select: none;
+        	-webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        	-webkit-touch-callout: none;
+        	-webkit-user-select: none;
+        	-moz-user-select: none;
+        	-ms-user-select: none;
+        }
     </style>
 </head>
 <body>

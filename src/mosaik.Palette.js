@@ -47,7 +47,7 @@
         function prepareAnimationBuffer(){
             var i;
 
-            for(i = 0; i < mapWidth * mapHeight; i++){
+            for (i = 0; i < mapWidth * mapHeight; i++) {
                 animationBuffer.push(i);
             }
         }
@@ -63,7 +63,7 @@
         }
 
         if(params.animate){
-            for(key in params.animate){
+            for (key in params.animate) {
                 params.animate[key].unshift(parseInt(key, 10));
                 params.animate[key] = {
                     frames: params.animate[key],
@@ -74,13 +74,13 @@
 
             this.tileAnimation = new mosaik.Tween({
                 frameLimit: params.animationFrameRate || 3,
-                processFunction: function(){
+                processFunction: function (){
                     var key,
                         anims;
 
                     anims = params.animate;
 
-                    for(key in anims){
+                    for (key in anims) {
                         anims[key].animationIndex++;
                         if(anims[key].animationIndex >= anims[key].frames.length){
                             anims[key].animationIndex = 0;
@@ -116,12 +116,32 @@
             tileMap.src = params.mapImage;
         }
 
-        this.draw = function (index, x, y){
+        this.draw = function (index, x, y, debugDrawing){
+            var originalIndex;
+            originalIndex = index;
             index = animationBuffer[index];
             var srcY = Math.floor(index / mapWidth);
-            var srcX = (index - (srcY*2) * mapHeight) * tileSizeW;
+            var srcX = (index - (srcY * 2) * mapHeight) * tileSizeW;
             srcY *= tileSizeH;
             drawContext.drawImage(tileMap, srcX, srcY, tileSizeW, tileSizeH, x, y, tileSizeW, tileSizeH);
+
+            if(debugDrawing.tileOutlines){
+                drawContext.save();
+                drawContext.beginPath();
+                drawContext.strokeStyle = debugDrawing.tileOutlines;
+                drawContext.lineWidth = 1;
+                drawContext.rect(x + 0.5, y + 0.5, this.tileWidth, this.tileHeight);
+                drawContext.stroke();
+                drawContext.restore();
+            }
+
+            if(debugDrawing.tilePaletteIndexes){
+                drawContext.save();
+                drawContext.font = 'monoline 8pt';
+                drawContext.fillStyle = debugDrawing.tilePaletteIndexes;
+                drawContext.fillText(originalIndex !== index ? originalIndex + '/' + index : index, x + 3, y + 12);
+                drawContext.restore();
+            }
         };
 
         this.setDrawContext = function (newDrawContext){
