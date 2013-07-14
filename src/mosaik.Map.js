@@ -466,6 +466,14 @@
                 }
             }
 
+            if(toY < 0 || toX < 0 || toY > field.length || toX > field[0].length){
+                return [];
+            }
+
+            if(avoidTiles && avoidTiles.indexOf(field[toX][toY]) !== -1){
+                return [];
+            }
+
             openList.push({
                 x: toX,
                 y: toY,
