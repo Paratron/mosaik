@@ -21,6 +21,8 @@
         this.height = params.height || 0;
         this.offsX = params.offsX || 0;
         this.offsY = params.offsY || 0;
+        this.dynOffsX = 0;  //Can be used by object extensions
+        this.dynOffsY = 0;
         this.layer = params.layer || 0;
         this.visible = params.visible !== undefined ? params.visible : true;
         this.rendered = 0; //Will be used by the Stages rendering function to check if the object has been rendered during a render process.
@@ -39,27 +41,6 @@
     };
 
     mosaik.Object.prototype = {
-        /**
-         * Will place the object on a new position on the map.
-         * @param x
-         * @param y
-         * @param duration
-         */
-        move: function (x, y, duration){
-            var oldX,
-                oldY;
-
-            oldX = this.x;
-            oldY = this.y;
-
-            if(!duration){
-                this.x = x;
-                this.y = y;
-                this.map.placeObject(this.layer, this, x, y, oldX, oldY);
-                this.trigger('move', x, y, oldX, oldY);
-            }
-        },
-
         /**
          * This method is called by the Stage to tell the object where to render its graphical asset.
          * @param {CanvasRenderingContext2D} canvasContext

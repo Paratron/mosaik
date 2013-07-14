@@ -17,7 +17,7 @@ module.exports = function (grunt){
                 sourceMap: 'dist/mosaik.min.smap.js'
             },
             dist: {
-                src: ['src/mosaik.Core.js', 'src/mosaik.Events.js', 'src/mosaik.Input.js', 'src/mosaik.Map.js', 'src/mosaik.Palette.js', 'src/mosaik.Stage.js', 'src/mosaik.Object.js', 'src/mosaik.Tween.js'],
+                src: ['src/mosaik.Core.js', 'src/mosaik.Events.js', 'src/mosaik.Input.js', 'src/mosaik.Map.js', 'src/mosaik.Palette.js', 'src/mosaik.Stage.js', 'src/mosaik.Object.js', 'src/mosaik.Tween.js', 'src/mosaik._moveable.js'],
                 dest: 'dist/mosaik.min.js'
             }
         },
@@ -31,7 +31,7 @@ module.exports = function (grunt){
                         ' */\n'
             },
             dist: {
-                src: ['src/mosaik.Core.js', 'src/mosaik.Events.js', 'src/mosaik.Input.js', 'src/mosaik.Map.js', 'src/mosaik.Palette.js', 'src/mosaik.Stage.js', 'src/mosaik.Object.js', 'src/mosaik.Tween.js'],
+                src: ['src/mosaik.Core.js', 'src/mosaik.Events.js', 'src/mosaik.Input.js', 'src/mosaik.Map.js', 'src/mosaik.Palette.js', 'src/mosaik.Stage.js', 'src/mosaik.Object.js', 'src/mosaik.Tween.js', 'src/mosaik._moveable.js'],
                 dest: 'dist/mosaik.js'
             }
         },

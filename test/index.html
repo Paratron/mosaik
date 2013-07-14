@@ -3,6 +3,7 @@
 <head>
     <title>Mosaik Test</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <link rel="shortcut icon" href="favicon.ico">
     <!--[if lt IE 9]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -30,7 +31,7 @@
             map,
             player;
 
-    var stage = new mosaik.Stage({
+    stage = new mosaik.Stage({
         el: 'playground',
         debug: 'debugInfo',
         debugDrawing: {
@@ -67,15 +68,18 @@
                     offsY: -10,
                     map: map,
                     palette: oPal,
-                    paletteIndex: 1
+                    paletteIndex: 1,
+                    extend: [
+                        mosaik._moveable
+                    ]
                 });
+
+                _.extend(player, mosaik._moveable);
 
                 map.placeObject(player, 0, 11, 10);
             });
         }
     });
-
-    traveled = [];
 
     map.on('pointertap', function (e){
         //map.setViewport(e.pointers[0].tileX, e.pointers[0].tileY);
@@ -87,10 +91,12 @@
                 player.y,
                 e.pointers[0].tileX,
                 e.pointers[0].tileY,
-                [34,5,6,7,19,33,47,48,49,21,35]
+                [34, 5, 6, 7, 19, 33, 47, 48, 49, 21, 35]
         );
 
         stage.debugHighlightFields(path);
+
+        player.moveAlong(path);
     });
 
 </script>

@@ -66,6 +66,8 @@
         highlightedTiles = null;
         this.debugDrawing = params.debugDrawing || {};
 
+        this.tweenTime = tweenTime;
+
         //When running in non-browser context, only the headless mode is available.
         if(typeof window === 'undefined'){
             headless = true;
@@ -138,10 +140,16 @@
          * @param runTime
          */
         function processTweens(runTime){
-            var i;
+            var i,
+                tween;
 
             for (i = 0; i < tweens.length; i++) {
-                tweens[i].process(runTime);
+                tween = tweens[i];
+                if(tween.finished){
+                    tweens.splice(i, 1);
+                    continue;
+                }
+                tween.process(runTime);
             }
         }
 
@@ -202,7 +210,7 @@
                 ctx.save();
                 ctx.beginPath();
                 ctx.fillStyle = debugDrawing.debugFieldHighlight;
-                for(l in highlightedTiles){
+                for (l in highlightedTiles) {
                     ctx.rect((highlightedTiles[l].x - tileSliceX) * tW + renderOffsetX + 0.5, (highlightedTiles[l].y - tileSliceY) * tH + renderOffsetY + 0.5, tW, tH);
                 }
                 ctx.fill();
@@ -257,8 +265,8 @@
                             continue;
                         }
                         o.rendered = runTime;
-                        xPos = (x - tileSliceX) * tW + renderOffsetX + o.offsX;
-                        yPos = (y - tileSliceY) * tH + renderOffsetY + o.offsY;
+                        xPos = (x - tileSliceX) * tW + renderOffsetX + o.offsX + o.dynOffsX;
+                        yPos = (y - tileSliceY) * tH + renderOffsetY + o.offsY + o.dynOffsY;
                         o.render(ctx, xPos, yPos, debugDrawing);
                     }
                 }
@@ -305,6 +313,7 @@
                 }
                 mapObject.palette.setDrawContext(ctx);
                 map = mapObject;
+                mapObject.currentStage = this;
                 this.listenTo(map, 'viewportChange', function (){
                     calculateViewportData();
                 });

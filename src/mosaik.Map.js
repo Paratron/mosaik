@@ -29,6 +29,7 @@
         this.width = 0;
         this.height = 0;
         this.viewport = [0, 0];
+        this.currentStage = null;
 
         var that,
             i,
@@ -219,6 +220,7 @@
                 obj.x = x;
                 obj.y = y;
                 obj.layer = layer;
+                obj.map = this;
 
                 if(oldX && oldY && !noEvent){
                     this.trigger('ObjectMoved', obj);
@@ -236,8 +238,8 @@
             var freeX,
                 freeY;
 
-            for (freeX = x; freeX < x + obj.width - 1; freeX++) {
-                for (freeY = y; freeY < y + obj.width - 1; freeY++) {
+            for (freeX = x; freeX <= x + obj.width - 1; freeX++) {
+                for (freeY = y; freeY <= y + obj.width - 1; freeY++) {
                     this.objectLayers[obj.layer][freeX][freeY] = null;
                 }
             }
@@ -398,6 +400,13 @@
                     });
                     node = node.parent;
                 }
+
+                path.push({
+                    x: node.x,
+                    y: node.y
+                });
+
+                path.shift();
 
                 return path;
             }

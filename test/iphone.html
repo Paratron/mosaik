@@ -27,16 +27,16 @@
             left: 0;
         }
 
-        /*
-         * @photonstorm fix for white flashes on tapping the canvas.
-         */
+            /*
+             * @photonstorm fix for white flashes on tapping the canvas.
+             */
         * {
-        	user-select: none;
-        	-webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-        	-webkit-touch-callout: none;
-        	-webkit-user-select: none;
-        	-moz-user-select: none;
-        	-ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
     </style>
 </head>
@@ -53,18 +53,26 @@
     document.getElementById('playground').width = window.innerWidth;
     document.getElementById('playground').height = window.innerHeight;
 
-    document.body.onorientationchange = function(){
+    document.body.onorientationchange = function (){
         stage.setDimensions(window.innerWidth, window.innerHeight);
     };
 
-    var stage = new mosaik.Stage({
+    var stage,
+            map,
+            player;
+
+    stage = new mosaik.Stage({
         el: 'playground',
-        debug: 'debugInfo'
+        debug: 'debugInfo',
+        debugDrawing: {
+            debugFieldHighlight: 'rgba(152,56,255,0.5)',
+            lastClickedTile: 'rgba(255,255,0,0.5)'
+        }
     });
 
     stage.captureInput();
 
-    var map = new mosaik.Map({
+    map = new mosaik.Map({
         file: 'lib/map.json',
         initialize: function (){
             this.setViewport(this.width / 2, this.height / 2);
@@ -78,7 +86,7 @@
 
             oPal.on('ready', function (){
 
-                var o = new mosaik.Object({
+                player = new mosaik.Object({
                     width: 1,
                     height: 1,
                     offsX: 2,
@@ -88,13 +96,40 @@
                     paletteIndex: 1
                 });
 
-                map.placeObject(0, o, 11, 10);
+                map.placeObject(player, 0, 11, 10);
             });
         }
     });
 
     map.on('pointertap', function (e){
-        map.setViewport(e.pointers[0].tileX, e.pointers[0].tileY);
+        //map.setViewport(e.pointers[0].tileX, e.pointers[0].tileY);
+
+        var path;
+
+        path = map.getPath(
+                0,
+                player.x,
+                player.y,
+                e.pointers[0].tileX,
+                e.pointers[0].tileY,
+                [34, 5, 6, 7, 19, 33, 47, 48, 49, 21, 35]
+        );
+
+        stage.debugHighlightFields(path);
+    });
+
+    map.on('pointermove', function(e){
+        var x,
+            y;
+
+        x = e.pointers[0].x;
+        y = e.pointers[0].y;
+
+        x = Math.floor(map.width / 100 * (x / (screen.width / 100)));
+        y = Math.floor(map.height / 100 * (y / (screen.height / 100)));
+
+
+        map.setViewport(x, y);
     });
 
 </script>

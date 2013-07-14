@@ -22,6 +22,9 @@
         this.finishTime = null; //End timestamp of the tween. Will be set in the first process() call.
         this.beginValue = this.value = params.beginValue;
         this.finishValue = params.finishValue;
+        this.finished = false;
+
+        this.deltaValue = this.finishValue - this.beginValue;
 
         this.processFunction = params.processFunction; //The process function is called each "frame" of the animation.
         this.updateFunction = params.updateFunction || function(){};
@@ -40,7 +43,7 @@
 
     mosaik.Tween.prototype = {
         /**
-         * The process function is called from the mosaik.Stage object about 30 times a minute.
+         * The process function is called from the mosaik.Stage object about 30 times a second.
          * @param deltaTime
          */
         process: function (deltaTime){
@@ -48,7 +51,9 @@
 
             if(this.beginTime === null){
                 this.beginTime = deltaTime;
-                this.finishTime = deltaTime + this.duration;
+                if(this.duration){
+                    this.finishTime = deltaTime + this.duration;
+                }
             }
 
             if(this.frameLimit){
@@ -62,10 +67,11 @@
 
             this.value = this.processFunction(t, this.beginValue, this.finishValue, this.deltaValue, this.value);
 
-            this.updateFunction(this.value);
+            this.updateFunction.call(this, t);
 
-            if(deltaTime >= this.finishTime){
+            if(this.finishTime && deltaTime >= this.finishTime){
                 this.finishFunction();
+                this.finished = true;
             }
         }
     };
