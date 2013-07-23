@@ -24,6 +24,7 @@
 
 <script src="lib/underscore-min.js"></script>
 <script src="lib/stats.js"></script>
+<script src="lib/q.min.js"></script>
 <script src="../dist/mosaik.js"></script>
 
 <script>
@@ -68,10 +69,32 @@
                     offsY: -10,
                     map: map,
                     palette: oPal,
-                    paletteIndex: 1
+                    paletteIndex: 1,
+                    animationFPS: 5,
+                    animations: {
+                        "walk:s": {
+                            frames: [0, 1, 2, 1],
+                            loop: true
+                        },
+                        "walk:w": {
+                            frames: [3,4,5,4],
+                            loop: true
+                        },
+                        "walk:e": {
+                            frames: [6,7,8,7],
+                            loop: true
+                        },
+                        "walk:n": {
+                            frames: [9,10,11,10],
+                            loop: true
+                        }
+                    }
                 });
 
                 _.extend(player, mosaik._moveable);
+                _.extend(player, mosaik._animatable);
+
+                player.moveSpeed = 0.05;
 
                 map.placeObject(player, 0, 11, 10);
             });
@@ -88,12 +111,13 @@
                 player.y,
                 e.pointers[0].tileX,
                 e.pointers[0].tileY,
-                [34, 5, 6, 7, 19, 33, 47, 48, 49, 21, 35]
+                [34, 5, 6, 7, 19, 33, 47, 48, 49, 21, 35] //avoid
         );
 
         stage.debugHighlightFields(path);
 
-        player.moveAlong(path);
+        player.setAnimation('walk', true);
+        player.moveAlong(path).then(function(){player.stopAnimation()});
     });
 
 </script>

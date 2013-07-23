@@ -18,6 +18,7 @@
         isMoveable: true,
         currentTween: null,
         activeMovement: null,
+        direction: 's',
         moveSpeed: 0.0333, //The amount of tiles the object should move within one animation frame.
         /**
          * Will place the object on a new position on the map.
@@ -33,6 +34,7 @@
 
             this.x = x;
             this.y = y;
+
             if(!this.map.placeObject(this, this.layer, x, y, oldX, oldY)){
                 throw new Error('Placing error');
             }
@@ -48,7 +50,8 @@
                 tileSizeH,
                 that,
                 stage,
-                moveID;
+                moveID,
+                defer;
 
             if(!path.length){
                 return;
@@ -77,21 +80,30 @@
                     vals;
 
                 if(!path.length || that.activeMovement !== moveID){
+                    if(defer){
+                        defer.resolve();
+                    }
                     return;
                 }
 
                 nextField = path.shift();
 
-                direction = that.x < nextField.x ? 'r' : direction;
-                direction = that.x > nextField.x ? 'l' : direction;
-                direction = that.y < nextField.y ? 'd' : direction;
-                direction = that.y > nextField.y ? 'u' : direction;
+                direction = that.x < nextField.x ? 'e' : direction;
+                direction = that.x > nextField.x ? 'w' : direction;
+                direction = that.y > nextField.y ? 'n' : direction;
+                direction = that.y < nextField.y ? 's' : direction;
+
+                if(that.direction !== direction){
+                    that.trigger('directionChange', direction);
+                }
+
+                that.direction = direction;
 
                 vals = {
-                    r: tileSizeW,
-                    l: -tileSizeW,
-                    u: -tileSizeH,
-                    d: tileSizeH
+                    e: tileSizeW,
+                    w: -tileSizeW,
+                    n: -tileSizeH,
+                    s: tileSizeH
                 };
 
                 if(that.currentTween){
@@ -103,7 +115,7 @@
                     finishValue: vals[direction],
                     duration: moveTime,
                     updateFunction: function(){
-                        if(direction === 'l' || direction === 'r'){
+                        if(direction === 'w' || direction === 'e'){
                             that.dynOffsX = this.value;
                             that.dynOffsY = 0;
                         } else {
@@ -122,6 +134,11 @@
             }
 
             moveToNext();
+
+            if(window.Q){
+                defer = window.Q.defer();
+                return defer.promise;
+            }
         }
     };
 })();

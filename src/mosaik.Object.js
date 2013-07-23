@@ -14,9 +14,12 @@
     }
 
     mosaik.Object = function (params){
+
+        _.extend(this, params);
+
         this.id = Math.random().toString().split('.').pop();
-        this.x = params.x || null;
-        this.y = params.y || null;
+        this.x = params.x || 0;
+        this.y = params.y || 0;
         this.width = params.width || 0;
         this.height = params.height || 0;
         this.offsX = params.offsX || 0;
@@ -27,15 +30,10 @@
         this.visible = params.visible !== undefined ? params.visible : true;
         this.rendered = 0; //Will be used by the Stages rendering function to check if the object has been rendered during a render process.
 
-        this.map = params.map;
-        if(!(this.map instanceof mosaik.Map)){
-            throw new Error('Need to get passed a reference to the containing map');
-        }
-
         this.palette = params.palette;
-        if(!(this.palette instanceof mosaik.Palette)){
+        /*if(!(this.palette instanceof mosaik.Palette)){
             throw new Error('Need to get passed a reference to the sprite palette used for drawing');
-        }
+        }*/
 
         this.paletteIndex = params.paletteIndex || 0;
     };
@@ -49,6 +47,10 @@
          * @param {Object} debugDrawing Configuration object for potentially debug drawings
          */
         render: function(canvasContext, x, y, debugDrawing){
+            if(!this.palette){
+                return;
+            }
+
             this.palette.setDrawContext(canvasContext);
             this.palette.draw(this.paletteIndex, x, y, {});
             if(debugDrawing.objectOutlines){

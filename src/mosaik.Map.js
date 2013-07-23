@@ -146,9 +146,7 @@
                 defaultFillIndex = 0;
             }
 
-            this.mapData = [
-                []
-            ];
+            this.mapData = [[]];
             this.width = width;
             this.height = height;
 
@@ -207,7 +205,7 @@
             }
 
             if(!this.objectHitTest(layer, x, y, obj.width, obj.height, obj)){
-                if(oldX && oldY){
+                if(oldX !== undefined && oldY !== undefined){
                     this.removeObject(obj, oldX, oldY, true);
                 }
 
@@ -383,7 +381,7 @@
             }
 
             function isOpen(node){
-                return _.find(openList, function(n){
+                return _.find(openList, function (n){
                     return n.x === node.x && n.y === node.y;
                 });
             }
@@ -442,7 +440,7 @@
                 getNode(node.x + 1, node.y, node, neighbors);
                 getNode(node.x, node.y + 1, node, neighbors);
 
-                for(key in neighbors){
+                for (key in neighbors) {
                     neighbor = neighbors[key];
                     tG = node.g + 1;
 

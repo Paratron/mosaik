@@ -96,6 +96,8 @@
                     paletteIndex: 1
                 });
 
+                _.extend(player, mosaik._moveable);
+
                 map.placeObject(player, 0, 11, 10);
             });
         }
@@ -116,6 +118,8 @@
         );
 
         stage.debugHighlightFields(path);
+
+        player.moveAlong(path);
     });
 
     map.on('pointermove', function(e){

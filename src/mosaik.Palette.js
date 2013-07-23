@@ -54,6 +54,8 @@
 
         this.ready = false;
         this.tileAnimation = null;
+        this.length = null;
+        this.image = null;
 
         if(params.size){
             this.tileWidth = this.tileHeight = tileSizeW = tileSizeH = params.size;
@@ -94,6 +96,8 @@
         if(tileMap instanceof Image){
             mapWidth = tileMap.width / tileSizeW;
             mapHeight = tileMap.height / tileSizeH;
+            this.length = mapWidth * mapHeight;
+            this.image = tileMap;
             prepareAnimationBuffer();
             this.ready = true;
             /**
@@ -109,6 +113,8 @@
             tileMap.onload = function (){
                 mapWidth = tileMap.width / tileSizeW;
                 mapHeight = tileMap.height / tileSizeH;
+                that.length = mapWidth * mapHeight;
+                that.image = tileMap;
                 prepareAnimationBuffer();
                 that.ready = true;
                 that.trigger('ready', that);
@@ -121,7 +127,7 @@
             originalIndex = index;
             index = animationBuffer[index];
             var srcY = Math.floor(index / mapWidth);
-            var srcX = (index - (srcY * 2) * mapHeight) * tileSizeW;
+            var srcX = (index - (srcY * mapWidth)) * tileSizeW;
             srcY *= tileSizeH;
             drawContext.drawImage(tileMap, srcX, srcY, tileSizeW, tileSizeH, x, y, tileSizeW, tileSizeH);
 
@@ -130,7 +136,7 @@
                 drawContext.beginPath();
                 drawContext.strokeStyle = debugDrawing.tileOutlines;
                 drawContext.lineWidth = 1;
-                drawContext.rect(x + 0.5, y + 0.5, this.tileWidth, this.tileHeight);
+                drawContext.rect(x, y, this.tileWidth, this.tileHeight);
                 drawContext.stroke();
                 drawContext.restore();
             }

@@ -83,13 +83,15 @@
                 el = document.createElement('canvas');
                 stageWidth = el.width = params.width;
                 stageHeight = el.height = params.height;
-                document.body.appendChild(el);
+                params.el.appendChild(el);
             } else {
                 stageWidth = el.width;
                 stageHeight = el.height;
             }
 
             ctx = el.getContext('2d');
+
+            //ctx.translate(0.5, 0.5);
 
             if(params.debug){
                 if(window.Stats === undefined){
@@ -200,7 +202,7 @@
                 ctx.save();
                 ctx.beginPath();
                 ctx.fillStyle = debugDrawing.lastClickedTile;
-                ctx.rect((lastClickedTile.x - tileSliceX) * tW + renderOffsetX + 0.5, (lastClickedTile.y - tileSliceY) * tH + renderOffsetY + 0.5, tW, tH);
+                ctx.rect((lastClickedTile.x - tileSliceX) * tW + renderOffsetX, (lastClickedTile.y - tileSliceY) * tH + renderOffsetY + 0.5, tW, tH);
                 ctx.fill();
                 ctx.restore();
             }
@@ -211,7 +213,7 @@
                 ctx.beginPath();
                 ctx.fillStyle = debugDrawing.debugFieldHighlight;
                 for (l in highlightedTiles) {
-                    ctx.rect((highlightedTiles[l].x - tileSliceX) * tW + renderOffsetX + 0.5, (highlightedTiles[l].y - tileSliceY) * tH + renderOffsetY + 0.5, tW, tH);
+                    ctx.rect((highlightedTiles[l].x - tileSliceX) * tW + renderOffsetX, (highlightedTiles[l].y - tileSliceY) * tH + renderOffsetY + 0.5, tW, tH);
                 }
                 ctx.fill();
                 ctx.restore();
@@ -279,6 +281,10 @@
          * Basically everything that can be cached after a call to setViewport() on the map or a change of stage dimensions.
          */
         function calculateViewportData(){
+            if(!map){
+                return;
+            }
+
             stageXpx = (map.viewport[0] * map.palette.tileWidth) - (stageWidth / 2);
             stageYpx = (map.viewport[1] * map.palette.tileHeight) - (stageHeight / 2);
 
@@ -321,9 +327,18 @@
                 if(map.palette.tileAnimation){
                     tweens.push(map.palette.tileAnimation);
                 }
+                this.trigger('mapChange', map);
                 return;
             }
             throw new Error('Only elements of type mosaik.Map allowed.');
+        };
+
+        /**
+         * Returns the currently set map object.
+         * @returns {mosaik.Map|null}
+         */
+        this.getMap = function(){
+            return map;
         };
 
         /**
@@ -377,6 +392,14 @@
 
                     p.tileX = Math.floor((p.x - renderOffsetX) / tW) + tileSliceX;
                     p.tileY = Math.floor((p.y - renderOffsetY) / tH) + tileSliceY;
+
+                    if(p.tileX < 0 || p.tileX >= map.width || p.tileY < 0 || p.tileY >= map.height){
+                        e.pointers.splice(i, 1);
+                        if(!e.pointers.length){
+                            return;
+                        }
+                        continue;
+                    }
 
                     if(i === 0 && e.type === 'pointerup'){
                         lastClickedTile = {

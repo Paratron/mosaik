@@ -39,6 +39,16 @@
             }
         }
 
+        if(!this.duration){
+            //No duration given - we have to make guesses :(
+            if(this.finishValue === this.beginValue + 1 || this.finishValue === this.beginValue - 1){
+                //Okay, we want to make steps in .1
+                this.duration = (this.deltaValue * 10) * (this.frameLimit || 1000 / 30);
+            } else {
+                this.duration = this.deltaValue * (this.frameLimit || 1000 / 30);
+            }
+        }
+
     };
 
     mosaik.Tween.prototype = {
