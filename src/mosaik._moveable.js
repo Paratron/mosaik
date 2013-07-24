@@ -51,10 +51,16 @@
                 that,
                 stage,
                 moveID,
-                defer;
+                defer,
+                rtrn;
+
+            if(window.Q){
+                defer = window.Q.defer();
+                rtrn = defer.promise;
+            }
 
             if(!path.length){
-                return;
+                return rtrn;
             }
 
             if(duration){
@@ -83,7 +89,7 @@
                     if(defer){
                         defer.resolve();
                     }
-                    return;
+                    return rtrn;
                 }
 
                 nextField = path.shift();
@@ -135,10 +141,7 @@
 
             moveToNext();
 
-            if(window.Q){
-                defer = window.Q.defer();
-                return defer.promise;
-            }
+            return rtrn;
         }
     };
 })();

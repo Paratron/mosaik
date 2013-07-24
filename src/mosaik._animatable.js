@@ -84,7 +84,7 @@
         stopAnimation: function(){
             this.currentAnimation.finished = true;
             delete this.currentAnimation;
-            this.paletteIndex = this.defaultIndex;
+            this.paletteIndex = this.idle ? this.idle[this.direction] : this.defaultIndex;
         }
     };
 })();
