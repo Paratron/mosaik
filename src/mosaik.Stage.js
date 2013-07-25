@@ -183,8 +183,14 @@
             debugDrawing = that.debugDrawing;
 
             for (l = 0; l < mData.length; l++) {
+                if(!mData[l].visible){
+                    continue;
+                }
                 for (y = tileSliceY; y < tileSliceY + tileSliceH; y++) {
                     for (x = tileSliceX; x < tileSliceX + tileSliceW; x++) {
+                        if(mData[l][x][y] === null){
+                            continue;
+                        }
                         xPos = (x - tileSliceX) * tW + renderOffsetX;
                         yPos = (y - tileSliceY) * tH + renderOffsetY;
                         palette.draw(mData[l][x][y], xPos, yPos, debugDrawing);
@@ -267,6 +273,11 @@
                             continue;
                         }
                         o.rendered = runTime;
+
+                        if(o.visible === false){
+                            continue;
+                        }
+
                         xPos = (x - tileSliceX) * tW + renderOffsetX + o.offsX + o.dynOffsX;
                         yPos = (y - tileSliceY) * tH + renderOffsetY + o.offsY + o.dynOffsY;
                         o.render(ctx, xPos, yPos, debugDrawing);

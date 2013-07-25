@@ -143,22 +143,86 @@
                 row;
 
             if(defaultFillIndex === undefined){
-                defaultFillIndex = 0;
+                defaultFillIndex = null;
             }
 
-            this.mapData = [[]];
+            this.mapData = [];
             this.width = width;
             this.height = height;
 
-            for (x = 0; x < width; x++) {
+            this.createTileLayer(defaultFillIndex);
+        },
+
+        /**
+         * Create a new tilemap layer and fill it with the default index.
+         * @param {Number} defaultFillIndex
+         */
+        createTileLayer: function (defaultFillIndex){
+            var x,
+                y,
+                row,
+                layer;
+
+            layer = [];
+
+            if(defaultFillIndex === undefined){
+                defaultFillIndex = null;
+            }
+
+            for (x = 0; x < this.width; x++) {
                 row = [];
 
-                for (y = 0; y < height; y++) {
+                for (y = 0; y < this.height; y++) {
                     row.push(defaultFillIndex);
                 }
 
-                this.mapData[0].push(row);
+                layer.push(row);
             }
+
+            layer.visible = true;
+
+            this.mapData.push(layer);
+        },
+
+        /**
+         * Removes a previously created tile layer.
+         * Warning: You cannot remove the last existing layer. Use map.prepare() instead.
+         * @param {Number} layerIndex
+         */
+        removeTileLayer: function (layerIndex){
+            if(this.mapData.length <= 1){
+                throw new Error('You cannot remove the last layer');
+            }
+
+            if(layerIndex < 0 || layerIndex >= this.mapData.length){
+                throw new Error('Illegal index');
+            }
+
+            this.mapData.splice(layerIndex, 1);
+        },
+
+        /**
+         * Makes a layer visible (enables it for rendering).
+         * @param {Number} layerIndex
+         */
+        showLayer: function (layerIndex){
+            if(layerIndex < 0 || layerIndex >= this.mapData.length){
+                throw new Error('Illegal index');
+            }
+
+            this.mapData[layerIndex].visible = true;
+        },
+
+        /**
+         * Makes a layer invisible (disables it for rendering).
+         * @param {Number} layerIndex
+         */
+        hideLayer: function (layerIndex){
+            if(layerIndex < 0 || layerIndex >= this.mapData.length){
+                throw new Error('Illegal index');
+            }
+
+            this.mapData[layerIndex].visible = false;
         },
 
         /**

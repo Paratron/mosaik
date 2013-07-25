@@ -45,6 +45,7 @@
 <div id="debugInfo"></div>
 <script src="lib/underscore-min.js"></script>
 <script src="lib/stats.js"></script>
+<script src="lib/q.min.js"></script>
 <script src="../dist/mosaik.js"></script>
 
 <script>
@@ -93,10 +94,36 @@
                     offsY: -10,
                     map: map,
                     palette: oPal,
-                    paletteIndex: 1
+                    paletteIndex: 1,
+                    animationFPS: 5,
+                    idle: {
+                        s: 1,
+                        w: 4,
+                        e: 7,
+                        n: 10
+                    },
+                    animations: {
+                        "walk:s": {
+                            frames: [0, 1, 2, 1],
+                            loop: true
+                        },
+                        "walk:w": {
+                            frames: [3, 4, 5, 4],
+                            loop: true
+                        },
+                        "walk:e": {
+                            frames: [6, 7, 8, 7],
+                            loop: true
+                        },
+                        "walk:n": {
+                            frames: [9, 10, 11, 10],
+                            loop: true
+                        }
+                    }
                 });
 
                 _.extend(player, mosaik._moveable);
+                _.extend(player, mosaik._animatable);
 
                 map.placeObject(player, 0, 11, 10);
             });
@@ -119,12 +146,15 @@
 
         stage.debugHighlightFields(path);
 
-        player.moveAlong(path);
+        player.setAnimation('walk', true);
+        player.moveAlong(path).then(function (){
+            player.stopAnimation()
+        });
     });
 
-    map.on('pointermove', function(e){
+    map.on('pointermove', function (e){
         var x,
-            y;
+                y;
 
         x = e.pointers[0].x;
         y = e.pointers[0].y;
