@@ -67,6 +67,15 @@
         this.debugDrawing = params.debugDrawing || {};
 
         this.tweenTime = tweenTime;
+        //canvasContext, tileSliceX, tileSliceY, tileSliceW, tileSliceH, tileWidth, tileHeight, renderOffsetX, renderOffsetY
+        this.hookPreFrame = function (){
+        };
+        this.hookPostFrame = function (){
+        };
+
+        //layerIndex, canvasContext, tileSliceX, tileSliceY, tileSliceW, tileSliceH, tileWidth, tileHeight, renderOffsetX, renderOffsetY
+        this.hookPostLayer = function (){
+        };
 
         //When running in non-browser context, only the headless mode is available.
         if(typeof window === 'undefined'){
@@ -182,26 +191,32 @@
             tH = palette.tileHeight;
             debugDrawing = that.debugDrawing;
 
+            that.hookPreFrame(ctx, tileSliceX, tileSliceY, tileSliceW, tileSliceH, tW, tH, renderOffsetX, renderOffsetY);
+
             for (l = 0; l < mData.length; l++) {
                 if(!mData[l].visible){
                     continue;
                 }
+                if(mData[l].type === 1){
+                    renderObjects(mData[l]);
+                    continue;
+                }
                 for (y = tileSliceY; y < tileSliceY + tileSliceH; y++) {
                     for (x = tileSliceX; x < tileSliceX + tileSliceW; x++) {
-                        if(mData[l][x][y] === null){
+                        if(mData[l][x + ',' + y] === null){
                             continue;
                         }
                         xPos = (x - tileSliceX) * tW + renderOffsetX;
                         yPos = (y - tileSliceY) * tH + renderOffsetY;
-                        palette.draw(mData[l][x][y], xPos, yPos, debugDrawing);
+                        palette.draw(mData[l][x + ',' + y], xPos, yPos, debugDrawing);
                         //ctx.strokeText(x + ',' + y, (x - tileSliceX)*tW + renderOffsetX + 5, (y - tileSliceY)*tH + renderOffsetY - 10);
                         //ctx.strokeRect((x - tileSliceX)*tW + renderOffsetX, (y - tileSliceY)*tH + renderOffsetY, 32, 32);
                     }
                 }
-                if(mData.length > 1 && l === mData.length - 2){
-                    renderObjects(runTime);
-                }
+                that.hookPostLayer(l, ctx, tileSliceX, tileSliceY, tileSliceW, tileSliceH, tW, tH, renderOffsetX, renderOffsetY);
             }
+
+            that.hookPostFrame(ctx, tileSliceX, tileSliceY, tileSliceW, tileSliceH, tW, tH, renderOffsetX, renderOffsetY);
 
             if(debugDrawing.lastClickedTile && lastClickedTile){
                 ctx.save();
@@ -225,10 +240,6 @@
                 ctx.restore();
             }
 
-            if(mData.length === 1){
-                renderObjects(runTime);
-            }
-
             if(stats){
                 stats.end();
             }
@@ -242,47 +253,51 @@
          * one tile.
          * @param {Number} runTime
          */
-        function renderObjects(runTime){
-            var i,
-                x,
-                y,
-                xPos,
-                yPos,
+        function renderObjects(objectLayer){
+
+            var filtered,
                 o,
-                pal,
+                i,
                 tW,
                 tH,
-                objectLayers,
-                debugDrawing;
+                pal,
+                debugDrawing,
+                xPos,
+                yPos;
 
-            objectLayers = map.objectLayers;
+            filtered = [];
             pal = map.palette;
             tW = pal.tileWidth;
             tH = pal.tileHeight;
             debugDrawing = that.debugDrawing;
 
-            for (i = 0; i < objectLayers.length; i++) {
-                for (y = tileSliceY; y < tileSliceY + tileSliceH; y++) {
-                    for (x = tileSliceX; x < tileSliceX + tileSliceW; x++) {
-                        o = objectLayers[i][x][y];
+            for (i = 0; i < objectLayer.objects.length; i++) {
+                o = objectLayer.objects[i];
 
-                        if(o === null){
-                            continue;
-                        }
-                        if(o.rendered === runTime){
-                            continue;
-                        }
-                        o.rendered = runTime;
-
-                        if(o.visible === false){
-                            continue;
-                        }
-
-                        xPos = (x - tileSliceX) * tW + renderOffsetX + o.offsX + o.dynOffsX;
-                        yPos = (y - tileSliceY) * tH + renderOffsetY + o.offsY + o.dynOffsY;
-                        o.render(ctx, xPos, yPos, debugDrawing);
-                    }
+                if(o.x < tileSliceX || o.y < tileSliceY || o.x > tileSliceX + tileSliceW || o.y > tileSliceY + tileSliceH){
+                    continue;
                 }
+
+                filtered.push(o);
+            }
+
+            filtered.sort(function (a, b){
+                if(a.y > b.y){
+                    return -1;
+                }
+                if(a.y < b.y){
+                    return 1;
+                }
+                return 0;
+            });
+
+            for (i = 0; i < filtered.length; i++) {
+                o = filtered[i];
+
+                xPos = (o.x - tileSliceX) * tW + renderOffsetX + o.offsX + o.dynOffsX;
+                yPos = (o.y - tileSliceY) * tH + renderOffsetY + o.offsY + o.dynOffsY;
+
+                o.render(ctx, xPos, yPos, debugDrawing);
             }
         }
 
@@ -292,23 +307,35 @@
          * Basically everything that can be cached after a call to setViewport() on the map or a change of stage dimensions.
          */
         function calculateViewportData(){
+            var traditional;
+
             if(!map){
                 return;
             }
 
+            traditional = (map.height || map.width) ? true : false;
+
             stageXpx = (map.viewport[0] * map.palette.tileWidth) - (stageWidth / 2);
             stageYpx = (map.viewport[1] * map.palette.tileHeight) - (stageHeight / 2);
 
-            tileSliceW = Math.ceil(Math.min(stageWidth / map.palette.tileWidth, map.width));
-            tileSliceH = Math.ceil(Math.min(stageHeight / map.palette.tileHeight, map.height));
-            tileSliceX = Math.floor(Math.min(stageXpx / map.palette.tileWidth, map.width - tileSliceW));
-            tileSliceY = Math.floor(Math.min(stageYpx / map.palette.tileHeight, map.height - tileSliceH));
+            if(traditional){
+                tileSliceW = Math.ceil(Math.min(stageWidth / map.palette.tileWidth, map.width));
+                tileSliceH = Math.ceil(Math.min(stageHeight / map.palette.tileHeight, map.height));
+                tileSliceX = Math.floor(Math.min(stageXpx / map.palette.tileWidth, map.width - tileSliceW));
+                tileSliceY = Math.floor(Math.min(stageYpx / map.palette.tileHeight, map.height - tileSliceH));
 
-            if(tileSliceX < 0){
-                tileSliceX = 0;
+                if(tileSliceX < 0){
+                    tileSliceX = 0;
+                }
+                if(tileSliceY < 0){
+                    tileSliceY = 0;
+                }
             }
-            if(tileSliceY < 0){
-                tileSliceY = 0;
+            else {
+                tileSliceW = Math.ceil(stageWidth / map.palette.tileWidth);
+                tileSliceH = Math.ceil(stageHeight / map.palette.tileHeight);
+                tileSliceX = Math.floor(stageXpx / map.palette.tileWidth);
+                tileSliceY = Math.floor(stageYpx / map.palette.tileHeight);
             }
 
             tileSliceWpx = tileSliceW * map.palette.tileWidth;
@@ -348,7 +375,7 @@
          * Returns the currently set map object.
          * @returns {mosaik.Map|null}
          */
-        this.getMap = function(){
+        this.getMap = function (){
             return map;
         };
 
@@ -389,7 +416,8 @@
                 var i,
                     p,
                     tW,
-                    tH;
+                    tH,
+                    traditional;
 
                 if(!map){
                     return;
@@ -397,6 +425,7 @@
 
                 tW = map.palette.tileWidth;
                 tH = map.palette.tileHeight;
+                traditional = (map.height || map.width) ? true : false;
 
                 for (i = 0; i < e.pointers.length; i++) {
                     p = e.pointers[i];
@@ -404,7 +433,7 @@
                     p.tileX = Math.floor((p.x - renderOffsetX) / tW) + tileSliceX;
                     p.tileY = Math.floor((p.y - renderOffsetY) / tH) + tileSliceY;
 
-                    if(p.tileX < 0 || p.tileX >= map.width || p.tileY < 0 || p.tileY >= map.height){
+                    if(traditional && (p.tileX < 0 || p.tileX >= map.width || p.tileY < 0 || p.tileY >= map.height)){
                         e.pointers.splice(i, 1);
                         if(!e.pointers.length){
                             return;

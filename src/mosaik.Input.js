@@ -33,10 +33,18 @@
 
     mosaik.Input = function (params){
         var el,
+            $parent,
             ongoingTouches,
-            that;
+            that,
+            scrollOffs;
 
         el = params.el;
+        if(typeof window !== 'undefined' && typeof window.jQuery !== 'undefined'){
+            $parent = jQuery(el).parent();
+        } else {
+            $parent = null;
+            scrollOffs = 0;
+        }
         that = this;
         ongoingTouches = [];
 
@@ -46,13 +54,16 @@
             e.preventDefault();
             e.stopPropagation();
             elPos = getOffset(el);
+            if($parent){
+                scrollOffs = $parent.scrollTop();
+            }
 
             that.trigger('pointerdown', {
                 type: 'pointerdown',
                 pointers: [
                     {
                         x: e.clientX - elPos.x,
-                        y: e.clientY - elPos.y,
+                        y: e.clientY - elPos.y + scrollOffs,
                         id: null
                     }
                 ],
@@ -70,13 +81,16 @@
             e.preventDefault();
             e.stopPropagation();
             elPos = getOffset(el);
+            if($parent){
+                scrollOffs = $parent.scrollTop();
+            }
 
             that.trigger('pointerup', {
                 type: 'pointerup',
                 pointers: [
                     {
                         x: e.clientX - elPos.x,
-                        y: e.clientY - elPos.y,
+                        y: e.clientY - elPos.y + scrollOffs,
                         id: null
                     }
                 ],
@@ -94,13 +108,16 @@
             e.preventDefault();
             e.stopPropagation();
             elPos = getOffset(el);
+            if($parent){
+                scrollOffs = $parent.scrollTop();
+            }
 
             that.trigger('pointermove', {
                 type: 'pointermove',
                 pointers: [
                     {
                         x: e.clientX - elPos.x,
-                        y: e.clientY - elPos.y,
+                        y: e.clientY - elPos.y + scrollOffs,
                         id: null
                     }
                 ],

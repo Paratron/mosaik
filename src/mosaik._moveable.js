@@ -35,9 +35,6 @@
             this.x = x;
             this.y = y;
 
-            if(!this.map.placeObject(this, this.layer, x, y, oldX, oldY)){
-                throw new Error('Placing error');
-            }
             this.trigger('move', x, y, oldX, oldY);
         },
         moveBy: function (x, y, duration){

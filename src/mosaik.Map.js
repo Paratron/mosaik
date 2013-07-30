@@ -24,12 +24,14 @@
         params = params || {};
 
         this.mapData = null;
+        this.defaultIndex = null;   //The default index is returned, when a requested map field has not been set.
         this.objectLayers = [];
         this.palette = null;
-        this.width = 0;
-        this.height = 0;
+        this.width = null;
+        this.height = null;
         this.viewport = [0, 0];
         this.currentStage = null;
+        this.ready = false;
 
         var that,
             i,
@@ -73,6 +75,7 @@
                 }
             });
 
+            that.ready = true;
             that.trigger('ready', that);
         }
 
@@ -95,7 +98,7 @@
 
                         for (x = 0; x < fileContent.width; x++) {
                             for (y = 0; y < fileContent.height; y++) {
-                                that.mapData[i][x][y] = fileContent.layers[i].data[y * fileContent.width + x] - 1;
+                                that.mapData[i][x + ',' + y] = fileContent.layers[i].data[y * fileContent.width + x] - 1;
                             }
                         }
                     }
@@ -133,22 +136,20 @@
          * THIS FLUSHES ALL EXISTING MAP DATA!
          * Initializes the mapData array and creates one layer per field with the default field index.
          * This is normally called from the constructor and doesn't need to be called again.
-         * @param {Number} width
-         * @param {Number} height
+         * Leaving out width and height creates an infinite map.
+         * @param {Number} [width]
+         * @param {Number} [height]
          * @param {Number} [defaultFillIndex=0]
          */
         prepare: function (width, height, defaultFillIndex){
-            var x,
-                y,
-                row;
 
             if(defaultFillIndex === undefined){
                 defaultFillIndex = null;
             }
 
             this.mapData = [];
-            this.width = width;
-            this.height = height;
+            this.width = width || null;
+            this.height = height || null;
 
             this.createTileLayer(defaultFillIndex);
         },
@@ -156,32 +157,40 @@
         /**
          * Create a new tilemap layer and fill it with the default index.
          * @param {Number} defaultFillIndex
+         * @returns {Number} The index of the newly created layer.
          */
         createTileLayer: function (defaultFillIndex){
-            var x,
-                y,
-                row,
-                layer;
+            var layer;
 
-            layer = [];
+            layer = {};
 
-            if(defaultFillIndex === undefined){
-                defaultFillIndex = null;
-            }
-
-            for (x = 0; x < this.width; x++) {
-                row = [];
-
-                for (y = 0; y < this.height; y++) {
-                    row.push(defaultFillIndex);
-                }
-
-                layer.push(row);
-            }
-
+            //top, left, right, bottom
+            layer.boundaries = [0, 0, this.width || 0, this.height || 0];
             layer.visible = true;
+            layer.type = 0; //Tile Layer
+            layer.defaultIndex = defaultFillIndex || null;
 
             this.mapData.push(layer);
+
+            return this.mapData.length - 1;
+        },
+
+        /**
+         * The method creates a empty object layer and returns its index.
+         * @returns {Number} The index of the newly created layer.
+         */
+        createObjectLayer: function (){
+            var layer;
+
+            layer = {};
+
+            layer.visible = true;
+            layer.type = 1;
+            layer.objects = [];
+
+            this.mapData.push(layer);
+
+            return this.mapData.length - 1;
         },
 
         /**
@@ -189,7 +198,7 @@
          * Warning: You cannot remove the last existing layer. Use map.prepare() instead.
          * @param {Number} layerIndex
          */
-        removeTileLayer: function (layerIndex){
+        removeLayer: function (layerIndex){
             if(this.mapData.length <= 1){
                 throw new Error('You cannot remove the last layer');
             }
@@ -225,126 +234,59 @@
             this.mapData[layerIndex].visible = false;
         },
 
-        /**
-         * The method creates a empty object layer and returns it.
-         * @returns {Array}
-         */
-        createObjectLayer: function (){
-            var x,
-                y,
-                oLayer;
-
-            oLayer = [];
-
-            for (x = 0; x < this.width; x++) {
-                oLayer.push([]);
-                for (y = 0; y < this.height; y++) {
-                    oLayer[x].push(null);
-                }
-            }
-
-            this.objectLayers.push(oLayer);
-
-            return oLayer;
+        getLayer: function (layerIndex){
+            return this.mapData[layerIndex];
         },
 
         /**
          * Place a object on the map or move it around.
          * Will return false if the desired space is occupied.
          * @param {mosaik.Object} obj
-         * @param {Number} layer
-         * @param {Number} x
-         * @param {Number} y
-         * @param {Number} [oldX]
-         * @param {Number} [oldY]
+         * @param {Number} layerIndex
          * @param {Bool} [noEvent=false] Prevent the method from firing a Map#ObjectMoved or Map#ObjectPlaced event.
          * @return {Bool}
          */
-        placeObject: function (obj, layer, x, y, oldX, oldY, noEvent){
-            var ocupX,
-                ocupY;
+        placeObject: function (obj, layerIndex, noEvent){
+            var layer;
 
-            while (layer + 1 > this.objectLayers.length) {
-                this.createObjectLayer();
+            layer = this.getLayer(layerIndex);
+
+            if(layer.type !== 1){
+                throw new Error('You cannot place the object on this layer');
             }
 
-            if(!this.objectHitTest(layer, x, y, obj.width, obj.height, obj)){
-                if(oldX !== undefined && oldY !== undefined){
-                    this.removeObject(obj, oldX, oldY, true);
-                }
-
-                for (ocupX = x; ocupX <= x + obj.width - 1; ocupX++) {
-                    for (ocupY = y; ocupY <= y + obj.height - 1; ocupY++) {
-                        this.objectLayers[layer][ocupX][ocupY] = obj;
-                    }
-                }
-                obj.rendered = 0;
-                obj.x = x;
-                obj.y = y;
-                obj.layer = layer;
-                obj.map = this;
-
-                if(oldX && oldY && !noEvent){
-                    this.trigger('ObjectMoved', obj);
-                    return true;
-                }
-                if(!noEvent){
-                    this.trigger('ObjectPlaced', obj);
-                }
-                return true;
+            if(layer.objects.indexOf(obj) !== -1){
+                throw new Error('Object already on this layer');
             }
-            return false;
+
+            layer.objects.push(obj);
+
+            if(!noEvent){
+                this.trigger('ObjectPlaced', obj);
+            }
         },
 
-        removeObject: function (obj, x, y, noEvent){
-            var freeX,
-                freeY;
+        removeObject: function (obj, layerIndex, noEvent){
+            var layer,
+                oIndex;
 
-            for (freeX = x; freeX <= x + obj.width - 1; freeX++) {
-                for (freeY = y; freeY <= y + obj.width - 1; freeY++) {
-                    this.objectLayers[obj.layer][freeX][freeY] = null;
-                }
+            layer = this.getLayer(layerIndex);
+
+            if(layer.type !== 1){
+                throw new Error('Illegal operation');
             }
 
-            obj.x = null;
-            obj.y = null;
-            obj.layer = null;
+            oIndex = layer.objects.indexOf(obj);
+
+            if(oIndex !== -1){
+                layer.objects.splice(oIndex, 1);
+            } else {
+                throw new Error('Object not found');
+            }
 
             if(!noEvent){
                 this.trigger('ObjectRemoved', obj);
             }
-        },
-
-        /**
-         * Checks if the given space is occupied on a specific object layer.
-         * @param {Number} layer
-         * @param {Number} x
-         * @param {Number} y
-         * @param {Number} [w=1]
-         * @param {Number} [h=1]
-         * @param {mosaik.Object} [ignoreObj] A mosaik object to ignore upon the hit-test.
-         * @returns {Bool}
-         */
-        objectHitTest: function (layer, x, y, w, h, ignoreObj){
-            var wI,
-                hI,
-                l;
-
-            w = w || 1;
-            h = h || 1;
-
-            l = this.objectLayers[layer];
-
-            for (wI = x; wI < x + w - 1; wI++) {
-                for (hI = y; hI < y + h - 1; hI++) {
-                    if(l[wI][hI] !== null){
-                        if(!ignoreObj || ignoreObj.id !== l[wI][hI].id){
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
         },
 
         /**
@@ -356,11 +298,26 @@
          * @param {Number} params.index
          */
         set: function (params){
+            var layer;
+
             if(params.layer === undefined){
                 params.layer = 0;
             }
 
-            this.mapData[params.layer][params.x][params.y] = params.index;
+            layer = this.mapData[params.layer];
+
+            if(layer.type !== 0){
+                throw new Error('You can only set tiles on tile layers');
+            }
+
+            layer[params.x + ',' + params.y] = params.index;
+
+            layer.boundaries = [
+                Math.min(layer.boundaries[0], params.x),
+                Math.min(layer.boundaries[1], params.y),
+                Math.max(layer.boundaries[2], params.x),
+                Math.max(layer.boundaries[3], params.y)
+            ];
 
             return this;
         },
@@ -384,13 +341,62 @@
          * @param {Number} [layer=0]
          */
         get: function (x, y, layer){
-            return this.mapData[layer || 0][x][y];
+            var value;
+
+            layer = layer || 0;
+
+            if(this.width || this.height){
+                if(x < 0 || y < 0 || x > this.with || y > this.height){
+                    throw new Error('Out of bounds');
+                }
+            }
+
+            if(this.mapData[layer].type !== 0){
+                throw new Error('You can perform get() only on a tile layer');
+            }
+
+            value = this.mapData[layer][x + ',' + y];
+
+            return value !== undefined ? value : null;
+        },
+
+        getWidth: function (){
+            var i,
+                x,
+                x2;
+
+            x = Number.POSITIVE_INFINITY;
+            x2 = 0;
+
+            for (i = 0; i < this.mapData.length; i++) {
+                x = Math.min(x, this.mapData[i].boundaries[0]);
+                x2 = Math.max(x2, this.mapData[i].boundaries[2]);
+            }
+
+            return Math.abs(x - x2);
+        },
+
+        getHeight: function (){
+            var i,
+                y,
+                y2;
+
+            y = Number.POSITIVE_INFINITY;
+            y2 = 0;
+
+            for (i = 0; i < this.mapData.length; i++) {
+                y = Math.min(y, this.mapData[i].boundaries[1]);
+                y2 = Math.max(y2, this.mapData[i].boundaries[3]);
+            }
+
+            return Math.abs(y - y2);
         },
 
         /**
          * Will return an array of tile coordinates that marks the path from tile A to tile B.
          * When avoidTiles is given, the tile types from the array are avoided by the path.
          * The method will return boolean false if no path is possible.
+         * TODO: fix this
          * @param {Number} layer
          * @param {Number} fromX
          * @param {Number} fromY
@@ -474,7 +480,7 @@
             }
 
             function getNode(x, y, parent, target){
-                if(x < 0 || y < 0 || y >= field.length || x >= field[0].length){
+                if(x < field.boundaries[0] || y < field.boundaries[1] || y >= field.boundaries[2] || x >= field.boundaries[3]){
                     return;
                 }
 
@@ -482,7 +488,7 @@
                     return;
                 }
 
-                if(avoidTiles.indexOf(field[x][y]) !== -1){
+                if(avoidTiles.indexOf(field[x + ',' + y]) !== -1){
                     return;
                 }
 
@@ -528,11 +534,8 @@
                 }
             }
 
-            if(toY < 0 || toX < 0 || toY > field.length || toX > field[0].length){
-                return [];
-            }
 
-            if(avoidTiles && avoidTiles.indexOf(field[toX][toY]) !== -1){
+            if(avoidTiles && avoidTiles.indexOf(field[toX + ',' + toY]) !== -1){
                 return [];
             }
 

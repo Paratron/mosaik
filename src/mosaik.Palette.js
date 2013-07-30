@@ -109,21 +109,48 @@
              */
             this.trigger('ready', this);
         } else {
-            tileMap = new Image();
-            tileMap.onload = function (){
-                mapWidth = tileMap.width / tileSizeW;
-                mapHeight = tileMap.height / tileSizeH;
-                that.length = mapWidth * mapHeight;
+            if(params.mapImage){
+                tileMap = new Image();
+                tileMap.onload = function (){
+                    mapWidth = tileMap.width / tileSizeW;
+                    mapHeight = tileMap.height / tileSizeH;
+                    that.length = mapWidth * mapHeight;
+                    that.image = tileMap;
+                    prepareAnimationBuffer();
+                    that.ready = true;
+                    that.trigger('ready', that);
+                };
+                tileMap.src = params.mapImage;
+            } else {
+                var canvas;
+                canvas = document.createElement('canvas');
+                canvas.width = tileSizeW;
+                canvas.height = tileSizeH;
+                tileMap = new Image();
+                tileMap.src = canvas.toDataURL('image/png');
+                that.length = 0;
                 that.image = tileMap;
-                prepareAnimationBuffer();
                 that.ready = true;
                 that.trigger('ready', that);
-            };
-            tileMap.src = params.mapImage;
+            }
         }
 
         this.draw = function (index, x, y, debugDrawing){
             var originalIndex;
+
+            if(index === undefined || index === null){
+                if(debugDrawing.tileOutlines){
+                    drawContext.save();
+                    drawContext.beginPath();
+                    drawContext.strokeStyle = debugDrawing.tileOutlines;
+                    drawContext.lineWidth = 1;
+                    drawContext.rect(x, y, this.tileWidth, this.tileHeight);
+                    drawContext.stroke();
+                    drawContext.restore();
+                }
+                return;
+            }
+
             originalIndex = index;
             index = animationBuffer[index];
             var srcY = Math.floor(index / mapWidth);
