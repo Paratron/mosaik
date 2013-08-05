@@ -14,6 +14,7 @@
      * Mapping RequestAnimationFrame onto Mosaik, or try and create something like that
      * for environments without RAF.
      */
+    //TODO: FIX THIS.
     if(typeof window !== 'undefined' && window.mozRequestAnimationFrame === undefined){
         //Shim for everything except FF.
         (function (){
@@ -46,13 +47,71 @@
         }());
     } else {
         //Shim for firefox. :-S
-        mosaik.requestAnimationFrame = function(cb){
+        mosaik.requestAnimationFrame = function (cb){
             return window.mozRequestAnimationFrame(cb);
         };
-        mosaik.cancelAnimationFrame = function(id){
+        mosaik.cancelAnimationFrame = function (id){
             return window.mozCancelRequestAnimationFrame(id);
         };
     }
+
+    /**
+     * Mosaiks own implementation of commonJS Promises/A.
+     * @param {Object} target Scope of the promise.
+     * @constructor
+     */
+    mosaik.Promise = function (target){
+        this._promiseTarget = target || root;
+    };
+    mosaik.Promise.prototype = {
+        resolve: function (){
+            var result;
+
+            if(typeof this._promiseSuccess === 'function'){
+                result = this._promiseSuccess.call(this._promiseTarget, arguments);
+
+                if(result instanceof mosaik.Promise){
+                    result.then(this._promiseChild.resolve, this._promiseChild.reject);
+                } else {
+                    this._promiseChild.resolve.call(this._promiseTarget, result);
+                }
+
+                return;
+            }
+            this._promiseResolved = arguments;
+        },
+        reject: function (){
+            var result;
+
+            if(typeof this._promiseError === 'function'){
+                result = this._promiseError.call(this._promiseTarget, arguments);
+
+                if(result instanceof mosaik.Promise){
+                    result.then(this._promiseChild.resolve, this._promiseChild.reject);
+                } else {
+                    this._promiseChild.reject.call(this._promiseTarget, result);
+                }
+
+                return;
+            }
+            this._promiseRejected = arguments;
+        },
+        then: function (success, error){
+            this._promiseSuccess = success;
+            this._promiseError = error;
+            this._promiseChild = new mosaik.Promise();
+
+            if(this._promiseResolved !== undefined){
+                this._promiseChild.resolve.call(this._promiseTarget, this._promiseResolved);
+            }
+
+            if(this._promiseRejected !== undefined){
+                this._promiseChild.reject.call(this._promiseTarget, this._promiseRejected);
+            }
+
+            return this._promiseChild;
+        }
+    };
 
     /**
      * Loads a file via AJAX and returns the content to a callback.

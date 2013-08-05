@@ -112,6 +112,8 @@
         //map.setViewport(e.pointers[0].tileX, e.pointers[0].tileY);
         var path;
 
+        console.log(e.pointers[0]);
+
         path = map.getPath(
                 0,
                 player.x,
@@ -124,7 +126,7 @@
         stage.debugHighlightFields(path);
 
         player.setAnimation('walk', true);
-        player.moveAlong(path).then(function(){player.stopAnimation()});
+        player.moveAlong(path).then(player.stopAnimation);
     });
 
 </script>

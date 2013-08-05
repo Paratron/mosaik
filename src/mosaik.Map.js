@@ -331,7 +331,75 @@
          * @param {Number} params.index
          */
         flood: function (params){
+            var layer,
+                workIndex,
+                fillTiles,
+                stackTiles,
+                checkedTiles,
+                currentTile,
+                x,
+                y;
 
+            layer = this.getLayer(params.layer || 0);
+            workIndex = layer[params.x + ',' + params.y];
+
+            if(params.index === undefined){
+                throw new Error('Please define a fill index');
+            }
+
+            fillTiles = [];
+            stackTiles = [];
+            checkedTiles = {};
+
+            if(layer.type !== 0){
+                throw new Error('Flood fill can only be performed on a tile layer');
+            }
+
+            stackTiles.push([params.x, params.y]);
+            fillTiles.push([params.x, params.y]);
+            checkedTiles[params.x + ',' + params.y] = true;
+
+            function check(x, y){
+                if(x < layer.boundaries[0] || y < layer.boundaries[1] || x > layer.boundaries[2] || y > layer.boundaries[3]){
+                    return false;
+                }
+                return (layer[x + ',' + y] === workIndex && !checkedTiles[x + ',' + y]);
+            }
+
+            function push(x, y){
+                stackTiles.push([x, y]);
+                fillTiles.push([x, y]);
+                checkedTiles[x + ',' + y] = true;
+            }
+
+            while (stackTiles.length) {
+                currentTile = stackTiles.shift();
+                x = currentTile[0];
+                y = currentTile[1];
+
+                if(check(x - 1, y)){
+                    push(x - 1, y);
+                }
+
+                if(check(x + 1, y)){
+                    push(x + 1, y);
+                }
+
+                if(check(x, y - 1)){
+                    push(x, y - 1);
+                }
+
+                if(check(x, y + 1)){
+                    push(x, y + 1);
+                }
+            }
+
+            for (x = 0; x < fillTiles.length; x++) {
+                y = fillTiles[x];
+                layer[y[0] + ',' + y[1]] = params.index;
+            }
+
+            return this;
         },
 
         /**

@@ -1,9 +1,18 @@
 Mosaik Engine Tasks
 ===================
 
+Objects
+-------
+[ ] non-integer positions (to avoid offset)
+
 Map
 ---
-[ ] Flood Fill
+[x] Flood Fill
 [x] Get Tile
+[ ] Non-Integer Viewport Pos
 [ ] Viewport Tweening
 [x] Pathfinding (getPath)
+
+Stage
+-----
+[ ] Zoom

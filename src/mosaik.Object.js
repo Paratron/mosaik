@@ -24,8 +24,6 @@
         this.height = params.height || 0;
         this.offsX = params.offsX || 0;
         this.offsY = params.offsY || 0;
-        this.dynOffsX = 0;  //Can be used by object extensions
-        this.dynOffsY = 0;
         this.layer = params.layer || 0;
         this.visible = params.visible !== undefined ? params.visible : true;
         this.rendered = 0; //Will be used by the Stages rendering function to check if the object has been rendered during a render process.

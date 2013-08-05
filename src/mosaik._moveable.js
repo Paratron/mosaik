@@ -40,6 +40,19 @@
         moveBy: function (x, y, duration){
 
         },
+        /**
+         * Reduces a path array to the fields where an actual direction change is happening (the corners).
+         * @param path
+         */
+        reducePath: function (path){
+
+        },
+        /**
+         * Moves the player along a
+         * @param path
+         * @param duration
+         * @returns {*}
+         */
         moveAlong: function (path, duration){
             var moveSpeed,
                 moveTime,
@@ -48,16 +61,13 @@
                 that,
                 stage,
                 moveID,
-                defer,
-                rtrn;
+                promise;
 
-            if(window.Q){
-                defer = window.Q.defer();
-                rtrn = defer.promise;
-            }
+            promise = new mosaik.Promise(this);
 
             if(!path.length){
-                return rtrn;
+                promise.reject();
+                return promise;
             }
 
             if(duration){
@@ -83,10 +93,8 @@
                     vals;
 
                 if(!path.length || that.activeMovement !== moveID){
-                    if(defer){
-                        defer.resolve();
-                    }
-                    return rtrn;
+                    promise.resolve();
+                    return promise;
                 }
 
                 nextField = path.shift();
@@ -117,7 +125,7 @@
                     beginValue: 0,
                     finishValue: vals[direction],
                     duration: moveTime,
-                    updateFunction: function(){
+                    updateFunction: function (){
                         if(direction === 'w' || direction === 'e'){
                             that.dynOffsX = this.value;
                             that.dynOffsY = 0;
@@ -126,7 +134,7 @@
                             that.dynOffsY = this.value;
                         }
                     },
-                    finishFunction: function(){
+                    finishFunction: function (){
                         that.dynOffsX = that.dynOffsY = 0;
                         that.moveTo(nextField.x, nextField.y);
                         moveToNext();
@@ -138,7 +146,7 @@
 
             moveToNext();
 
-            return rtrn;
+            return promise;
         }
     };
 })();

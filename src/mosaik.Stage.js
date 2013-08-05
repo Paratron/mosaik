@@ -67,6 +67,7 @@
         this.debugDrawing = params.debugDrawing || {};
 
         this.tweenTime = tweenTime;
+
         //canvasContext, tileSliceX, tileSliceY, tileSliceW, tileSliceH, tileWidth, tileHeight, renderOffsetX, renderOffsetY
         this.hookPreFrame = function (){
         };
@@ -157,7 +158,7 @@
             for (i = 0; i < tweens.length; i++) {
                 tween = tweens[i];
                 if(tween.finished){
-                    tweens.splice(i, 1);
+                    tweens.splice(i--, 1);
                     continue;
                 }
                 tween.process(runTime);
@@ -220,7 +221,6 @@
 
             if(debugDrawing.lastClickedTile && lastClickedTile){
                 ctx.save();
-                ctx.save();
                 ctx.beginPath();
                 ctx.fillStyle = debugDrawing.lastClickedTile;
                 ctx.rect((lastClickedTile.x - tileSliceX) * tW + renderOffsetX, (lastClickedTile.y - tileSliceY) * tH + renderOffsetY + 0.5, tW, tH);
@@ -229,7 +229,6 @@
             }
 
             if(debugDrawing.debugFieldHighlight && highlightedTiles){
-                ctx.save();
                 ctx.save();
                 ctx.beginPath();
                 ctx.fillStyle = debugDrawing.debugFieldHighlight;
@@ -244,6 +243,16 @@
                 stats.end();
             }
 
+        }
+
+        function objSort(a, b){
+            if(a.y > b.y){
+                return -1;
+            }
+            if(a.y < b.y){
+                return 1;
+            }
+            return 0;
         }
 
         /**
@@ -271,7 +280,7 @@
             tH = pal.tileHeight;
             debugDrawing = that.debugDrawing;
 
-            for (i = 0; i < objectLayer.objects.length; i++) {
+            for (i = objectLayer.objects.length - 1; i > -1; i--) {
                 o = objectLayer.objects[i];
 
                 if(o.x < tileSliceX || o.y < tileSliceY || o.x > tileSliceX + tileSliceW || o.y > tileSliceY + tileSliceH){
@@ -281,17 +290,9 @@
                 filtered.push(o);
             }
 
-            filtered.sort(function (a, b){
-                if(a.y > b.y){
-                    return -1;
-                }
-                if(a.y < b.y){
-                    return 1;
-                }
-                return 0;
-            });
+            filtered.sort(objSort);
 
-            for (i = 0; i < filtered.length; i++) {
+            for (i = filtered.length - 1; i > -1; i--) {
                 o = filtered[i];
 
                 xPos = (o.x - tileSliceX) * tW + renderOffsetX + o.offsX + o.dynOffsX;
